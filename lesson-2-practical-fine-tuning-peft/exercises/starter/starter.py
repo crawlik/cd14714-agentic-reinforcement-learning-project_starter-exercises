@@ -133,19 +133,28 @@ def validate_model(model, tokenizer, val_examples):
 
 if __name__ == "__main__":
     config = SFTConfig()
-    
+
     # Load and format dataset
-    train_examples = load_and_format_dataset(config.sft_data_path)
-    
-    if not train_examples:
+    examples = load_and_format_dataset(config.sft_data_path)
+
+    if not examples:
         print("No training examples found. Please generate the dataset first.")
         exit(1)
-    
+
+    # Hold out a few examples for validation
+    val_size = max(1, len(examples) // 5)
+    train_examples = examples[:-val_size]
+    val_examples = examples[-val_size:]
+
     # Configure LoRA
     peft_config = configure_lora()
-    
+
     # Run training
-    run_sft_training(config, train_examples)
-    
+    model, tokenizer = run_sft_training(config, train_examples)
+
     print("SFT training completed!")
-    print("Next steps: Evaluate model performance and analyze training metrics.")
+
+    # Validate on held-out examples
+    accuracy, confidence = validate_model(model, tokenizer, val_examples)
+    print(f"Validation accuracy: {accuracy:.2%}")
+    print(f"Average confidence: {confidence:.2%}")
