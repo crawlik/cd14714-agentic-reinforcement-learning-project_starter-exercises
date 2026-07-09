@@ -4,7 +4,7 @@ from npcpy.npc_compiler import NPC
 
 def prepare_movie_review_data():
     # Using 20newsgroups as proxy for review data
-    categories = ['rec.arts.movies.current-films', 'rec.arts.movies.past-films']
+    categories = ['rec.autos', 'rec.motorcycles']
     newsgroups = fetch_20newsgroups(subset='train', categories=categories, remove=('headers', 'footers', 'quotes'))
     
     reviews = []
