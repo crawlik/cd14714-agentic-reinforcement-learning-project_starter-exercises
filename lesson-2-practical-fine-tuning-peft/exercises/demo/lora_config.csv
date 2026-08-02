@@ -1,0 +1,2 @@
+r,lora_alpha,target_modules,lora_dropout,learning_rate,epochs
+16,32,"['q_proj', 'v_proj']",0.05,0.0002,3

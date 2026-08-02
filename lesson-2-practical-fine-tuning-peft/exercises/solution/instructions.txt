@@ -1,0 +1,120 @@
+Agentic Reinforcement Learning Solution2
+
+Supervised Fine-Tuning on Clinical Data
+Hello, and welcome to the exercise solution for the supervised fine tuning task on clinical data.
+
+The solution that we are demonstrating today shows how to properly fine tune a specialized model for a high stake task like clinical trial eligibility. The key to success is not just the training technique, but the quality and logic of the data the model learns from.
+
+Step 1: Creating a High-Quality, Logically Consistent Dataset
+The solution begins by creating a high quality logically consistent data set. It generates 200 patient summaries:
+
+Half of these are explicitly designed to be eligible by perfectly matching all inclusion criteria
+The other half are designed to be ineligible by systematically violating specific rules, such as:
+Age requirements
+HbA1c levels
+Explicit exclusion conditions
+This provides a clean, balanced and rule based signal for the model to learn from, which is the most critical step for successful fine tuning.
+
+Step 2: Fine-Tuning with PEFT
+We then fine tuned the Gemma 3 1 billion model on this dataset. The training process uses the PEFT approach to efficiently specialize the model for our clinical task.
+
+import pandas as pd
+from npcpy.npc_compiler import NPC
+
+def clinical_sft_training_lab():
+    # Load the dataset we created earlier
+    try:
+        df = pd.read_csv('clinical_eligibility_dataset.csv')
+    except:
+        print("Creating clinical dataset first...")
+        from Module2 import create_clinical_dataset_lab
+        df = create_clinical_dataset_lab()
+
+    # Create SFT trainer agent
+    sft_trainer = NPC(
+        name='SFT Trainer',
+        primary_directive='Configure supervised fine-tuning for clinical eligibility prediction',
+        model='gemma3:4b',
+        provider='ollama'
+    )
+
+    training_config_format = '''
+    {"training_config": {
+        "model_name": "google/gemma-2b-it",
+        "lora_r": 16,
+        "lora_alpha": 32,
+        "learning_rate": 2e-4,
+        "batch_size": 4,
+        "epochs": 3,
+        "max_seq_length": 512,
+        "gradient_accumulation_steps": 1
+    }}
+    '''
+
+    prompt = f"""Configure SFT training for clinical eligibility prediction.
+Dataset: {len(df)} patient cases
+Task: Predict eligibility status from patient summaries
+
+Recommend training hyperparameters for Gemma-2B.
+Format as: {training_config_format}"""
+
+    response = sft_trainer.get_llm_response(prompt, format='json')
+    config = response['response']['training_config']
+
+    # Prepare training format
+    training_data = []
+    for _, row in df.iterrows():
+        training_data.append({
+            'input': f"Patient: {row['patient_summary']}",
+            'output': row['eligibility_status']
+        })
+
+    training_df = pd.DataFrame(training_data)
+    training_df.to_csv('clinical_sft_training.csv', index=False)
+
+    config_df = pd.DataFrame([config])
+    config_df.to_csv('sft_training_config.csv', index=False)
+
+    print(f"SFT training setup complete with {len(training_data)} examples")
+    return training_df, config
+
+sft_data, sft_config = clinical_sft_training_lab()
+Step 3: Testing the Specialized Model
+Finally, after training is complete, we test the specialized model on a set of new unseen patient cases.
+
+Results
+The results show that our model had achieved 100% accuracy on these examples. Luckily enough.
+
+The Most Important Insight: Generalization Beyond Memorization
+The most important insight here is not just the perfect score though, but how it was achieved.
+
+The model correctly identified patients as not eligible for reasons that were not explicitly listed in the trading data's exclusion criteria, such as a recent DKA hospitalization.
+
+What This Demonstrates
+This demonstrates that the model did not just memorize the rules it was shown. It learned the underlying principle of patient safety from the logical examples and was able to generalize that knowledge to new complex scenarios.
+
+Conclusion
+With this lesson, hopefully, you've gained an appreciation for the task that you can have models be specialized for.
+
+Key Takeaways
+High-quality, logically consistent training data is critical for successful fine-tuning
+Balanced datasets with clear rule-based signals help models learn underlying principles
+PEFT efficiently specializes models for high-stakes tasks like clinical eligibility
+Models trained on logical examples can generalize beyond memorization to new scenarios
+100% accuracy demonstrates the model learned patient safety principles, not just explicit rules
+What You Accomplished
+Dataset Design: Created 200 balanced patient cases with explicit eligibility criteria
+
+Model Specialization: Fine-tuned Gemma-2B using PEFT for clinical trial eligibility
+
+Generalization: Model correctly identified ineligible patients for reasons not in training data
+
+Real-World Application: Demonstrated how to specialize models for high-stakes medical decisions
+
+Reflection Questions
+Consider: Why is it significant that the model identified patients as ineligible for reasons not explicitly in the training data's exclusion criteria?
+
+Think About: How would you design training data to teach a model the "underlying principles" rather than just explicit rules for another domain?
+
+Application: What other high-stakes domains could benefit from this approach of teaching principles through logically consistent examples?
+

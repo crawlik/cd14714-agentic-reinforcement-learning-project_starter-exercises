@@ -13,7 +13,7 @@ class SFTConfig:
     """Configuration for SFT fine-tuning."""
     base_model_name = "google/gemma-3-270m-it"
     output_model_path = "models/sft_prediction_model_gemma_270m"
-    sft_data_path = "../../../lesson-1-supervised-fine-tuning/exercises/starter/clinical_sft_dataset.csv"
+    sft_data_path = "clinical_sft_dataset.csv"
     
     # LoRA parameters - TODO: Configure these appropriately
     lora_r = 8

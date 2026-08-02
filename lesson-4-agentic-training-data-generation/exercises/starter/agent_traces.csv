@@ -1,0 +1,6 @@
+query,patient_id,reasoning_steps,tools_used,final_recommendation,final_response,success
+Evaluate patient P001 for clinical trial eligibility,P001,2,"['verify_age', 'get_comorbidities']",ELIGIBLE,age 58 verified and in range; severe severity with 0 comorbidities is acceptable.,True
+Check if patient P002 meets age requirements for study,P002,2,"['verify_age', 'get_comorbidities']",ELIGIBLE,age 35 verified and in range; severe severity with 1 comorbidity is acceptable.,True
+Assess patient P003 comorbidities for trial participation,P003,2,"['verify_age', 'get_comorbidities']",ELIGIBLE,age 24 verified and in range; mild severity with 3 comorbidities is acceptable.,True
+Verify eligibility of patient P004 based on medical history,P004,2,"['verify_age', 'get_comorbidities']",ELIGIBLE,age 32 verified and in range; mild severity with 1 comorbidity is acceptable.,True
+Screen patient P005 for potential trial candidates,P005,2,"['verify_age', 'get_comorbidities']",NEEDS_REVIEW,age could not be verified; escalate to a clinician.,False

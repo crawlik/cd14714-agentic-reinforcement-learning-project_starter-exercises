@@ -1,0 +1,53 @@
+Agentic Training Data Generation
+
+What Is Agent Trajectory Data?
+One of the most valuable and fundamental types of data for training reinforcement learning agents is the agent trajectory, which is a complete step by step log of an agent's interaction with an environment while trying to solve a problem. It captures the agents entire thought process, not just the final answer.
+
+Each step in a trajectory typically consists of:
+
+The state of the environment
+The agent's observation
+Its thought process or reasoning
+The action it took
+The outcome
+By generating vast quantities of these trajectories, we can teach a base model, not just what to do, but how to think and how to explore.
+
+The Power of Trajectory Data
+The power of trajectory data lies in its completeness compared to traditional supervised learning that shows models input output pairs, like given this question, produce this answer. Trajectories show the entire reasoning process:
+
+When you see this situation, think about it this way, consider these options, choose this action, observe what happens then adjust your strategy accordingly. It's the difference between showing someone the solution to a math problem versus showing them how to work through it, step by step.
+
+This comprehensive view becomes crucial when training agents for complex multi step tasks, where a single trajectory might contain dozens of decision points.
+
+Example: Easter Egg Hunt
+To demonstrate this, let's examine how an agent generates a trajectory while searching for a hidden object in a grid environment, an Easter Egg Hunt, where the agent must systematically explore and make decisions based on what it observes at each step.
+
+The Five-Phase Process
+In the observe phase, the agent first gathers raw data about its environment, such as its current position and what it can see nearby.
+
+During the think phase, it sends this information to a large language model, asking it to reason about the situation and decide on both a thought and a specific action to take next.
+
+The act phase executes the chosen action, causing a direct change or interaction with the agent's environment.
+
+Next, the code records the entire sequence, observation, thought, action, and result as a single complete step in a trajectory log.
+
+Finally, the agent updates its internal state with the outcome of its action, preparing it for the next turn in the reasoning loop.
+
+Applying to Complex Domains
+This Easter Egg Hunt example, while simple, demonstrates principles that apply to much more complex domains. Whether you're training agents for customer service, software debugging or scientific research, the core pattern remains the same:
+
+Use traces to teach both:
+
+Specific actions in a given context
+General reasoning strategies, captured in detailed trajectories that preserve the full context of the decision making
+Key Takeaways
+Agent trajectories capture complete step-by-step logs including state, observation, reasoning, action, and outcome
+Trajectory data teaches both what to do and how to think, unlike simple input-output pairs
+The five-phase process (observe, think, act, record, update) creates comprehensive decision-making records
+Trajectories scale from simple grid searches to complex real-world domains like customer service and research
+Training on trajectories preserves the full context of decision-making for more effective learning
+Reflection Questions
+How does training on complete trajectories differ from training on final outcomes only, and what advantages does this provide?
+
+What types of multi-step tasks in your domain would benefit most from trajectory-based training data?
+

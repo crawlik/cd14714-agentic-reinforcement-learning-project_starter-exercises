@@ -1,0 +1,397 @@
+Exercise 6: DPO Training for Safety Alignment
+
+Using Direct Preference Optimization to Align Models with Safety Principles
+In this hands-on exercise, you will implement Direct Preference Optimization (DPO) to train a language model to prioritize patient safety in clinical decision-making. This is the culmination of the course—taking preference pairs from Exercise 5 and using them to shape model behavior.
+
+Prerequisites
+Tools and Environment:
+
+Python 3.8 or higher
+GPU strongly recommended (training on CPU will be very slow)
+Libraries: torch, transformers, peft, trl, datasets, pandas
+Access to starter code: lesson-6-practical-alignment-dpo/exercises/starter/starter.py
+Completed Exercise 5 with preference pairs
+Knowledge Requirements:
+
+Understanding of DPO principles
+Familiarity with LoRA from Exercise 2
+Knowledge of preference-based learning
+Python and PyTorch basics
+Objectives
+By the end of this exercise, you will be able to:
+
+Load and format preference datasets for DPO training
+Configure DPO-specific hyperparameters (beta, learning rate)
+Set up and run DPO training with LoRA adapters
+Evaluate whether a model has learned safety-conscious behavior
+Compare model behavior before and after alignment training
+Background
+What is DPO? Direct Preference Optimization trains models to prefer certain behaviors over others by:
+
+Showing pairs of outputs: one chosen (good), one rejected (bad)
+Increasing the probability of chosen outputs
+Decreasing the probability of rejected outputs
+Using a KL-divergence penalty to prevent the model from deviating too far from its base behavior
+Key DPO Parameters:
+
+Beta (β): Controls how much to penalize deviation from the base model (higher = stay closer to original)
+Learning rate: How quickly the model updates (lower = more stable, higher = faster but riskier)
+Max steps: How long to train
+Why DPO for Safety? Traditional fine-tuning shows the model what to do. DPO teaches it what to prefer—perfect for encoding values like "safety over speed."
+
+Steps
+Step 1: Prepare Your Environment
+High-level instruction: Install all required libraries and verify GPU availability
+
+Details:
+
+pip install torch transformers peft trl datasets pandas
+pip install accelerate bitsandbytes  # For efficient training
+Verify setup:
+
+import torch
+print(f"CUDA available: {torch.cuda.is_available()}")
+print(f"GPU count: {torch.cuda.device_count()}")
+Note: If no GPU, set smaller batch size and fewer training steps
+
+Step 2: Load Preference Dataset
+High-level instruction: Complete the load_preference_dataset(csv_path: str) function
+
+Details: Your preference dataset should have columns:
+
+prompt: The clinical evaluation task
+chosen: The safer reasoning trace
+rejected: The less safe reasoning trace
+principle: (Optional) The safety principle illustrated
+Loading process:
+
+Read CSV using pandas
+Verify required columns exist
+Convert to HuggingFace Dataset format
+Split into train/validation if desired
+Implementation example:
+
+def load_preference_dataset(csv_path: str):
+    df = pd.read_csv(csv_path)
+
+    # Verify required columns
+    required_cols = ["prompt", "chosen", "rejected"]
+    for col in required_cols:
+        if col not in df.columns:
+            raise ValueError(f"Missing required column: {col}")
+
+    # Convert to Dataset format
+    dataset = Dataset.from_pandas(df)
+
+    print(f"Loaded {len(dataset)} preference pairs")
+    return dataset
+Step 3: Configure DPO Training Parameters
+High-level instruction: Complete the configure_dpo_training() function
+
+Details: Set up training configuration with careful consideration of each parameter:
+
+Beta (β) - Deviation Penalty:
+
+Start with 0.1-0.5
+Lower (0.1): More aggressive optimization, bigger changes
+Higher (0.5): More conservative, stays closer to base model
+For safety-critical tasks, use higher beta to prevent overoptimization
+Learning Rate:
+
+Start with 1e-6 to 5e-6
+DPO is sensitive to learning rate
+Too high: unstable training, too much deviation
+Too low: no learning
+Max Steps:
+
+Start with 20-50 for small datasets
+More steps = more learning but risk overfitting
+Monitor loss—stop if it starts increasing
+Example configuration:
+
+def configure_dpo_training():
+    training_args = DPOConfig(
+        beta=0.1,  # KL penalty coefficient
+        learning_rate=5e-7,
+        max_steps=20,
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=4,
+        logging_steps=1,
+        save_steps=10,
+        output_dir="./dpo_safety_model",
+        remove_unused_columns=False,
+    )
+    return training_args
+Step 4: Set Up LoRA Configuration
+High-level instruction: Configure LoRA adapters for efficient DPO training
+
+Details: Similar to Exercise 2, but optimized for DPO:
+
+Smaller rank (4-8) to prevent overfitting on small preference datasets
+Target key attention modules
+Keep dropout moderate (0.1)
+Implementation:
+
+peft_config = LoraConfig(
+    r=8,
+    lora_alpha=16,
+    lora_dropout=0.1,
+    target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+    bias="none",
+    task_type="CAUSAL_LM"
+)
+Step 5: Implement DPO Training
+High-level instruction: Complete the run_dpo_training(config, preference_dataset) function
+
+Details: Set up the DPO training pipeline:
+
+Load models:
+
+Base model (reference model - stays frozen)
+Training model (will be updated with LoRA)
+Initialize DPO trainer:
+
+Pass both base and training models
+Provide preference dataset
+Include training arguments and PEFT config
+Run training:
+
+Call trainer.train()
+Monitor loss values
+Save the final adapter
+Implementation outline:
+
+def run_dpo_training(config: DPOConfig, preference_dataset):
+    # Load tokenizer and models
+    tokenizer = AutoTokenizer.from_pretrained(config.base_model_name)
+    tokenizer.pad_token = tokenizer.eos_token
+
+    # Load reference model (frozen)
+    ref_model = AutoModelForCausalLM.from_pretrained(
+        config.base_model_name,
+        torch_dtype=torch.float16,
+        device_map="auto"
+    )
+
+    # Load training model (will be updated)
+    model = AutoModelForCausalLM.from_pretrained(
+        config.base_model_name,
+        torch_dtype=torch.float16,
+        device_map="auto"
+    )
+
+    # Configure LoRA
+    peft_config = LoraConfig(...)
+
+    # Training arguments
+    training_args = configure_dpo_training()
+
+    # Initialize DPO trainer
+    trainer = DPOTrainer(
+        model=model,
+        ref_model=ref_model,
+        args=training_args,
+        train_dataset=preference_dataset,
+        tokenizer=tokenizer,
+        peft_config=peft_config,
+    )
+
+    # Train!
+    trainer.train()
+
+    # Save adapter
+    trainer.save_model(config.adapter_path)
+    print(f"Saved DPO adapter to {config.adapter_path}")
+Step 6: Implement Safety Evaluation
+High-level instruction: Complete the evaluate_safety_alignment() function
+
+Details: Test if the model learned to prioritize safety by:
+
+Create test cases:
+
+Clinical scenarios where safety is important
+Both risky and safe situations
+Compare before/after:
+
+Generate responses with base model
+Generate responses with DPO-trained model
+Look for differences in caution level
+Evaluation metrics:
+
+Count safety-related keywords ("verify", "check", "monitor")
+Measure response length (thorough vs quick)
+Manually review for thoroughness
+Implementation example:
+
+def evaluate_safety_alignment(model, tokenizer, test_cases):
+    results = {"improved": 0, "same": 0, "worse": 0}
+
+    for case in test_cases:
+        prompt = f"Evaluate patient eligibility: {case['description']}"
+
+        # Generate response
+        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+        outputs = model.generate(**inputs, max_new_tokens=100)
+        response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+        # Check for safety indicators
+        safety_keywords = ["verify", "check", "monitor", "assess", "risk", "exclusion"]
+        safety_count = sum(1 for kw in safety_keywords if kw in response.lower())
+
+        # Score (simple heuristic)
+        if safety_count >= 3:
+            results["improved"] += 1
+        elif safety_count >= 1:
+            results["same"] += 1
+        else:
+            results["worse"] += 1
+
+    return results
+Step 7: Run Training and Evaluate
+High-level instruction: Execute the full training pipeline and analyze results
+
+Sub-steps:
+
+Load your preference dataset
+Configure DPO training
+Run training (this may take 30-60 minutes)
+Save the adapter
+Load the adapter onto the base model
+Evaluate on test cases
+Compare before/after behavior
+Monitor during training:
+
+Loss should generally decrease
+Check for signs of overfitting (loss increases)
+Verify GPU memory usage is stable
+Expected Output
+Your completed exercise should produce:
+
+Trained LoRA adapter saved in the specified directory
+Training logs showing loss decreasing over steps
+Evaluation results demonstrating improved safety awareness
+Before/after comparison showing behavior changes
+Example training output:
+
+Loading preference dataset...
+Loaded 15 preference pairs
+
+Starting DPO training...
+Step 1/20 - Loss: 0.693
+Step 5/20 - Loss: 0.542
+Step 10/20 - Loss: 0.421
+Step 15/20 - Loss: 0.387
+Step 20/20 - Loss: 0.365
+
+Training completed!
+Saved DPO adapter to ./qwen3-dpo-adapter-v1
+
+Evaluating safety alignment...
+Test case 1: Improved - More safety checks mentioned
+Test case 2: Improved - Added monitoring recommendation
+Test case 3: Same - Already cautious
+Test case 4: Improved - Flagged exclusion criteria
+
+Safety Evaluation Results:
+- Improved: 75%
+- Same: 25%
+- Worse: 0%
+Success Criteria
+Your implementation is successful when:
+
+✓ DPO training completes without errors
+✓ Training loss decreases over time
+✓ Model adapter is saved correctly
+✓ Evaluation shows improved safety-conscious behavior
+✓ Model references safety checks more frequently after training
+✓ Model demonstrates more cautious recommendations
+Common Training Issues
+Memory Errors:
+
+Reduce per_device_train_batch_size to 1
+Increase gradient_accumulation_steps
+Use smaller base model
+Enable gradient checkpointing
+Loss Not Decreasing:
+
+Learning rate too low (increase to 1e-6 or 5e-6)
+Learning rate too high (decrease to 1e-7)
+Preference pairs not clear enough
+Dataset too small (need at least 10-20 pairs)
+Unstable Training:
+
+Beta too low (increase to 0.3-0.5)
+Learning rate too high
+Batch size too large
+No Behavior Change:
+
+Not enough training steps
+Learning rate too low
+Preference pairs too similar
+Need more diverse examples
+Hyperparameter Tuning Guide
+If model becomes too cautious:
+
+Lower beta (allows more deviation)
+Fewer training steps
+Lower learning rate
+If model doesn't change enough:
+
+Higher learning rate
+Lower beta
+More training steps
+More diverse preference pairs
+If training is unstable:
+
+Increase beta (more conservative)
+Decrease learning rate
+Smaller batch size
+Understanding DPO Loss
+What the loss means:
+
+Lower loss = model better distinguishes chosen from rejected
+Initial loss around 0.69 (random guessing)
+Good final loss: 0.2-0.4
+Too low (< 0.1): Possible overfitting
+Loss components:
+
+Preference accuracy: How often model prefers chosen over rejected
+KL penalty: How much model deviates from base
+Extension Challenges (Optional)
+If you complete the basic exercise, try these extensions:
+
+Multi-dimensional preferences: Train on speed vs safety vs thoroughness
+Curriculum learning: Start with easy pairs, progress to harder distinctions
+Active learning: Identify cases where model is uncertain and create new pairs
+Adversarial testing: Try to make the model give unsafe recommendations
+Ensemble methods: Combine multiple DPO-trained models
+Ethical Considerations
+After completing this exercise, reflect on:
+
+Value Alignment: Who decides what "safe" means? Medical experts? Patients? Regulators?
+Bias: Could your preference pairs encode systematic biases? (e.g., over-cautious for certain demographics)
+Transparency: Can users understand why the model makes certain recommendations?
+Accountability: If the model makes a mistake after DPO training, who is responsible?
+Trade-offs: Does prioritizing safety sometimes prevent beneficial treatment access?
+Real-World Deployment Considerations
+Before deploying a DPO-trained model:
+
+Validate on diverse patient populations
+Have medical experts review recommendations
+Implement human-in-the-loop for high-stakes decisions
+Monitor for drift over time
+Maintain audit logs of all recommendations
+Have clear escalation procedures
+You now have the skills to:
+
+Build agentic AI systems from scratch
+Create training data programmatically
+Fine-tune models efficiently with PEFT
+Align models with human values using preferences
+Evaluate and improve AI safety
+Continue learning:
+
+Explore other alignment techniques (RLHF, constitutional AI)
+Apply these methods to other domains
+Contribute to open-source AI safety research
+Consider the ethical implications of AI decision-making systems

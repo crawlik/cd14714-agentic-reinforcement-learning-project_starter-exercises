@@ -1,0 +1,2 @@
+beta,learning_rate,epochs,batch_size,max_length,ref_model
+0.1,1e-05,1,2,128,/Users/admin/udacity/sfp-agents/cd14714-agentic-reinforcement-learning-project_starter-exercises/lesson-6-practical-alignment-dpo/base_model

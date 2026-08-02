@@ -1,0 +1,4 @@
+patient_id,age,conditions,eligible
+P101,55,"Type 2 Diabetes, Hypertension",True
+P102,30,Asthma,False
+P103,67,Type 2 Diabetes,False

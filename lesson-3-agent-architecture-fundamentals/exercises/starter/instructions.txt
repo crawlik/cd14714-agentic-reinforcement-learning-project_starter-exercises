@@ -1,0 +1,261 @@
+Exercise 3: Agent Architecture Design
+
+Designing a Clinical Trial Matching Agent
+In this hands-on exercise, you will design the architecture for a clinical trial matching agent before implementing it. This exercise focuses on the thinking process, tool requirements, and reasoning patterns that make an agent effective.
+
+Prerequisites
+Tools and Environment:
+
+Text editor or IDE
+Access to starter code: lesson-3-agent-architecture-fundamentals/exercises/starter/starter.py
+Understanding of agent concepts from the lecture
+Knowledge Requirements:
+
+Basic understanding of agentic systems
+Knowledge of clinical trial eligibility criteria
+Familiarity with tool-based architectures
+Understanding of observe-think-act loops
+Objectives
+By the end of this exercise, you will be able to:
+
+Define clear goals and objectives for an agentic system
+Identify necessary tools for an agent's task
+Design a reasoning process using observe-think-act cycles
+Define state and action spaces for agent operation
+Create hypothetical reasoning traces
+Anticipate constraints and safety requirements
+Background
+Agentic Architecture Components:
+
+Primary Goal: What the agent is designed to accomplish
+Tools: Functions the agent can call to gather information or take actions
+State Space: Information the agent maintains during operation
+Action Space: Set of possible actions the agent can take
+Reasoning Process: Step-by-step thinking from observation to action
+Your task is to design an agent that can match patients to clinical trials by systematically gathering information and making informed recommendations.
+
+Steps
+Step 1: Define the Agent's Primary Goal
+High-level instruction: Complete the PRIMARY_GOAL section in the template
+
+Details:
+
+Write a clear, specific statement of what the agent should accomplish
+Focus on the what, not the how
+Consider both accuracy and safety
+Think about edge cases and failure modes
+Example considerations:
+
+Should the agent recommend patients for trials?
+Should it identify potential risks?
+Should it explain its reasoning?
+What level of confidence is required?
+Questions to answer:
+
+What is a successful outcome for this agent?
+What should the agent NEVER do?
+How should it handle ambiguous cases?
+Step 2: Identify Required Tools
+High-level instruction: Complete the REQUIRED_TOOLS list with at least 4-6 tools
+
+Details: For each tool, specify:
+
+Name: Clear, descriptive function name
+Description: What the tool does
+Input parameters: What data it needs
+Output: What it returns
+Tool categories to consider:
+
+Data retrieval (patient records, trial criteria)
+Criteria checking (age, conditions, medications)
+Risk assessment (drug interactions, comorbidities)
+Decision logging (audit trail, justification)
+Example tool specification:
+
+{
+    "name": "get_patient_medical_history",
+    "description": "Retrieves complete medical history including diagnoses, medications, and procedures",
+    "input_params": ["patient_id"],
+    "output": {"diagnoses": [], "medications": [], "procedures": [], "allergies": []}
+}
+Step 3: Design the Thinking Process
+High-level instruction: Complete the THINKING_PROCESS section with a step-by-step reasoning framework
+
+Details: Design the agent's reasoning loop:
+
+Observation: What initial information does the agent receive?
+Analysis: How does it understand and process this information?
+Tool Selection: Which tools does it call and in what order?
+Decision Making: How does it synthesize tool outputs?
+Action: What final recommendation does it provide?
+Key considerations:
+
+Should tools be called sequentially or in parallel?
+What happens if a tool returns an error?
+When does the agent have enough information to decide?
+How does it handle conflicting information?
+Step 4: Define State and Action Spaces
+High-level instruction: Complete the STATE_SPACE and ACTION_SPACE dictionaries
+
+State Space (what the agent remembers):
+
+Current patient information
+Trial criteria being evaluated
+Results from tool calls
+Intermediate decisions
+Confidence levels
+Action Space (what the agent can do):
+
+Call specific tools
+Request additional information
+Make eligibility recommendations
+Flag cases for human review
+Provide explanations
+Format:
+
+STATE_SPACE = {
+    "patient_data": "Complete patient profile including age, conditions, medications",
+    "tool_results": "Dictionary of results from each tool call",
+    "eligibility_status": "Current assessment: ELIGIBLE, NOT_ELIGIBLE, or UNCERTAIN"
+}
+Step 5: Create a Hypothetical Reasoning Trace
+High-level instruction: Complete the HYPOTHETICAL_TRACE section with a complete interaction example
+
+Details: Write out a full conversation showing:
+
+User's initial query
+Agent's thinking at each step
+Tool calls with parameters
+Tool results
+Agent's analysis of results
+Final recommendation with justification
+Format:
+
+User: "Evaluate 52-year-old male with hypertension and diabetes for trial NCT123456"
+Agent: "I'll evaluate this patient systematically. First, I need complete medical information."
+→ get_patient_record(patient_id="P52M", trial_id="NCT123456")
+← {age: 52, conditions: ["hypertension", "type2_diabetes"], medications: ["metformin", "lisinopril"]}
+Agent: "Patient is within age range. Now checking trial-specific eligibility criteria..."
+→ check_inclusion_criteria(patient_data, trial_criteria)
+← {age_ok: true, conditions_match: true, exclusions: none}
+Agent: "Patient meets basic criteria. Assessing safety considerations..."
+→ check_drug_interactions(current_meds, trial_drug)
+← {interactions: "minor", risk_level: "low"}
+Agent: "RECOMMENDATION: ELIGIBLE - Patient meets all inclusion criteria with low risk profile."
+Make it realistic:
+
+Include at least 3-4 tool calls
+Show the agent's reasoning between steps
+Handle both straightforward and complex scenarios
+Step 6: Define Constraints and Safety Checks
+High-level instruction: Complete the CONSTRAINTS and SAFETY_CHECKS lists
+
+Constraints (limitations and boundaries):
+
+Maximum number of tool calls allowed
+Time limits for decision-making
+Information access restrictions
+Required confidence thresholds
+Safety Checks (risk mitigation):
+
+Verify critical exclusion criteria
+Cross-check tool outputs for consistency
+Require human review for high-risk cases
+Log all decisions with justifications
+Examples:
+
+CONSTRAINTS = [
+    "Must complete analysis within 10 tool calls",
+    "Cannot access patient financial information",
+    "Must achieve 90% confidence for automatic recommendations"
+]
+
+SAFETY_CHECKS = [
+    "Double-check all exclusion criteria before final recommendation",
+    "Verify age calculations are accurate",
+    "Flag any drug interaction warnings for human review",
+    "Log complete reasoning chain for audit purposes"
+]
+Expected Output
+Your completed design template should include:
+
+A clear, specific primary goal statement
+At least 4-6 well-defined tools with complete specifications
+A detailed 5-step thinking process
+Comprehensive state and action space definitions
+A realistic hypothetical reasoning trace (minimum 3-4 tool calls)
+At least 3 constraints and 3 safety checks
+Success Criteria
+Your design is successful when:
+
+✓ The primary goal is specific and measurable
+✓ Tools cover all necessary operations for the task
+✓ The thinking process is logical and complete
+✓ State space captures all necessary information
+✓ Action space includes all possible agent behaviors
+✓ Hypothetical trace demonstrates realistic agent behavior
+✓ Constraints and safety checks address potential risks
+Design Quality Checklist
+Completeness:
+
+
+
+
+Clarity:
+
+
+
+
+Safety:
+
+
+
+
+Realism:
+
+
+
+
+Common Design Mistakes to Avoid
+Goal Definition:
+
+Too vague: "Help with clinical trials" ❌
+Too rigid: "Always recommend ELIGIBLE" ❌
+Just right: "Accurately assess patient eligibility while prioritizing safety" ✓
+Tool Design:
+
+Too few tools (agent can't gather needed information)
+Overlapping tools (redundant functionality)
+Missing critical tools (can't check exclusion criteria)
+Reasoning Process:
+
+Not specifying when to stop gathering information
+No plan for handling errors or missing data
+Unclear decision criteria
+Hypothetical Trace:
+
+Too simple (doesn't show real complexity)
+Unrealistic tool results
+Missing the agent's reasoning between steps
+Discussion Questions
+After completing your design, consider:
+
+Scalability: How would this design handle 100 different clinical trials?
+Edge Cases: What happens if a tool fails? If data is missing?
+Transparency: Can a human understand why the agent made its recommendation?
+Bias: Could this design lead to systematic errors for certain patient groups?
+Efficiency: Are there unnecessary tool calls? Could steps be parallelized?
+Extension Challenges (Optional)
+If you complete the basic exercise, try these extensions:
+
+Design for multiple trials: Modify the agent to compare a patient against several trials simultaneously
+Add explanation generation: Design a tool and process for the agent to explain its reasoning
+Handle uncertainty: Design specific actions for cases where confidence is low
+Create a validation framework: Design a process to test if your agent design is working correctly
+Next Steps
+After completing this exercise:
+
+You have a complete architectural blueprint for your agent
+This design will guide your implementation in Exercise 4
+Review your design with peers or instructors for feedback
+Consider how this architecture could apply to other domains beyond clinical trials

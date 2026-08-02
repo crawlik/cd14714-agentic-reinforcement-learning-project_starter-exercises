@@ -1,0 +1,100 @@
+Agentic Reinforcement Learning Solution1
+
+Generating a Clinical Trial Dataset
+Hello, and welcome to the first exercise solution on generating a clinical trial dataset. This solution shows how an agent can synthesize a labeled dataset by following logical rules.
+
+Let's look at the code and the results.
+
+Defining the Trial Rules
+We first start by defining the explicit rules of the trial:
+
+Inclusion criteria: Age range and HbA1c levels
+Exclusion criteria: Pregnancy or kidney failure
+import pandas as pd
+from npcpy.npc_compiler import NPC
+
+def create_clinical_dataset_lab():
+    trial_criteria = {
+        'inclusion': [
+            'Patients aged 18-65',
+            'Diagnosed with Type 2 Diabetes',
+            'HbA1c between 7.0% and 9.0%',
+            'No history of severe cardiovascular events'
+        ],
+        'exclusion': [
+            'Pregnant or breastfeeding',
+            'History of kidney failure',
+            'Currently on insulin therapy'
+        ]
+    }
+Creating the Clinical Data Creator Agent
+We then give these rules to a clinical data creator NPC.
+
+    clinical_creator = NPC(
+        name='Clinical Data Creator',
+        primary_directive='Create realistic patient eligibility pairs for clinical trials',
+        model='llama3.2',
+        provider='ollama'
+    )
+
+    expected_format = '''
+    {"clinical_pairs": [
+        {"patient_summary": "45-year-old male with Type 2 Diabetes, HbA1c 7.5%", "eligibility_status": "Eligible"},
+        {"patient_summary": "30-year-old pregnant female with Type 2 Diabetes", "eligibility_status": "Ineligible (Pregnant)"}
+    ]}
+    '''
+
+    criteria_text = f"Inclusion: {'; '.join(trial_criteria['inclusion'])}. Exclusion: {'; '.join(trial_criteria['exclusion'])}"
+The Prompt
+The prompt instructs it to generate 10 diverse patient scenarios and provides a detailed JSON example, including how to specify the reason for ineligibility.
+
+    prompt = f"""Create 10 patient eligibility pairs for this clinical trial:
+{criteria_text}
+
+Include diverse scenarios with both eligible and ineligible patients.
+Format as: {expected_format}"""
+
+    response = clinical_creator.get_llm_response(prompt, format='json')
+    clinical_data = response['response']['clinical_pairs']
+
+    df = pd.DataFrame(clinical_data)
+    df.to_csv('clinical_eligibility_dataset.csv', index=False)
+
+    print(f"Created {len(clinical_data)} clinical pairs, saved to clinical_eligibility_dataset.csv")
+    return df
+
+clinical_dataset = create_clinical_dataset_lab()
+Results and Observations
+The results show the agent successfully generated:
+
+Eligible Patients
+Like a 45-year-old male with Type 2 diabetes, HbA1c 7.5%.
+
+Ineligible Patients
+It also created ineligible patients for specific reasons, correctly identifying that:
+
+An HbA1c of 9.1% is out of range
+Applying the ineligible pregnant status
+A Limitation
+However, the agent also made a logical leap, incorrectly flagging a patient with kidney stones as having kidney failure, which shows a limitation in nuanced understanding.
+
+The Final Output
+The final output is a structured label dataset created from logical inference.
+
+The synthetic data, including its imperfections, can then be used to fine tune a specialized model.
+
+Key Takeaways
+Agents can generate synthetic labeled datasets by following explicit logical rules
+Inclusion/exclusion criteria provide clear signals for eligible vs ineligible cases
+JSON format examples guide consistent structured output
+Agent-generated data includes both correct classifications and edge case errors
+Synthetic datasets with imperfections can still be valuable for model training
+What You Accomplished
+Data Generation: Created 10 diverse patient eligibility scenarios automatically
+
+Rule Following: Agent applied inclusion/exclusion criteria to generate labels
+
+Edge Cases: Observed both correct inference and logical leaps in nuanced scenarios
+
+Output: Produced structured CSV dataset ready for fine-tuning
+

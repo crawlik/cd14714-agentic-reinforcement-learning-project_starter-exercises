@@ -1,0 +1,112 @@
+Automating Q&A Dataset Creation with LLMs
+Hello, and welcome to the first demo in your agentic reinforcement learning course. In this demo, we'll show how to automate the creation of a question and answer dataset using a large language model.
+
+Throughout this course, you will learn how to build processing pipelines with LLMs and agents. Agents are typically LLMs that are equipped with tools that are able to operate in a loop to accomplish complex tasks.
+
+The npcpy Library
+In the context of this course, we'll be making use of the npcpy library, an open-source tool that makes it easy to initialize agents with personas and helps handle some of the cumbersome boilerplate that comes with interacting with LLMs.
+
+In npcpy, we create these agents using the NPC class. We give the NPC:
+
+A name
+A primary directive
+This directive is injected into the system prompt, providing a core instruction that guides all of the agents' reasoning and responses. Making its behavior more focused and predictable than a generic model or one that is simply a helpful assistant.
+
+In this course, we're focusing primarily on using fine-tuning methods to create specialized models and models with agentic capabilities.
+
+Why This Matters
+Any seasoned data scientist will tell you that data cleaning and wrangling is the majority of the battle when it comes to doing any kind of analysis or model creation.
+
+By using natural language prompts and agents, we can:
+
+Produce high-quality synthetic datasets
+More easily clean our real datasets
+Format them in a way that we can begin to use them for training that can generalize
+The Demo: Wikipedia Q&A Dataset
+Now that we have some background, let's focus on our first demo.
+
+Step 1: Fetch Content from Wikipedia
+First, what we're going to do is fetch some content from Wikipedia. In particular, we're going to fetch the Wikipedia page for the Great Wall of China.
+
+This will be the source material for our agent to work with.
+
+import wikipedia
+import pandas as pd
+from npcpy.npc_compiler import NPC
+
+def fetch_wikipedia_content(topic):
+    try:
+        page = wikipedia.page(topic)
+        return page.content[:2000]  # First 2000 chars
+    except:
+        return wikipedia.summary(topic, sentences=10)
+Step 2: Create the Dataset Creator Agent
+Now, our NPC is created with:
+
+Name: "Dataset Creator"
+Primary directive: "Create high-quality question-answer pairs from Wikipedia text"
+This directive instructs the agent, it's one and only job, so I won't get distracted or try to be conversational. It will focus entirely on generating the data we need.
+
+def create_qa_dataset_demo(topic="Great Wall of China"):
+    wiki_content = fetch_wikipedia_content(topic)
+
+    data_creator = NPC(
+        name='Dataset Creator',
+        primary_directive='Create high-quality question-answer pairs from Wikipedia text',
+        model='llama3.2',
+        provider='ollama'
+    )
+Step 3: Provide Examples and Format
+Here, we also provide a set of examples so that the model can see the format that it's supposed to produce and also see how it should construct examples.
+
+    json_format = '''
+    {"pairs": [
+        {"question": "When was the Great Wall built?", "answer": "Built from 7th century BC"},
+        {"question": "Who joined the walls?", "answer": "Qin Shi Huang"}
+    ]}
+    '''
+Step 4: Create the Prompt
+Core of our interaction here is this prompt. We give the agent the Wikipedia content and a clear task. Create eight question-answer pairs.
+
+Most importantly, we provide a JSON example showing the exact output format we require. By telling the agent exactly how to structure its responses, we make the output machine readable and reliable.
+
+    prompt = f"""From this Wikipedia content, create 8 high-quality question-answer pairs.
+
+Content: {wiki_content}
+
+Each pair needs a specific question and complete answer from the text.
+Format as: {json_format}"""
+Step 5: Get Structured Response
+We then call the NPCs get_llm_response method. This will be a familiar one by the end of this course.
+
+By specifying the format as JSON, we can get the output to be already structured in the way that it should be so that we don't have to deal with any string processing or JSON loading.
+
+    response = data_creator.get_llm_response(prompt, format='json')
+    qa_pairs = response['response']['pairs']
+
+    df = pd.DataFrame(qa_pairs)
+    df.to_csv('wikipedia_qa_dataset.csv', index=False)
+
+    print(f"Created {len(qa_pairs)} Q&A pairs, saved to wikipedia_qa_dataset.csv")
+    return df
+
+qa_dataset = create_qa_dataset_demo()
+Results
+Now, let's look at some of the results from running our demo. The results show that the agent successfully processed the text and returned a structured list of eight question-answer pairs.
+
+Conclusion
+Hopefully, you've seen from this process how you can use LLMs to process information into structured formats that you can then use to train further models.
+
+Key Takeaways
+The npcpy library simplifies agent creation with personas and primary directives
+Agents with focused directives produce more predictable, specialized outputs
+Providing JSON format examples makes outputs machine-readable and reliable
+Wikipedia content can be automatically transformed into Q&A training datasets
+Structured JSON responses eliminate manual string processing
+What You Learned
+Technique: Creating focused agents with primary directives for specific tasks
+
+Tool: Using npcpy.NPC class to initialize agents with personas
+
+Output: Generating structured JSON datasets from unstructured text automatically
+

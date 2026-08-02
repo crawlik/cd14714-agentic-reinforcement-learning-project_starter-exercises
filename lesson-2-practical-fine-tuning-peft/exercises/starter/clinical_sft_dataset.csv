@@ -1,0 +1,21 @@
+patient_summary,eligibility_status
+"22-year-old patient with BMI 28.4, diagnosed with hypertension and asthma, not on stable medications, pregnant, recent cancer",NOT_ELIGIBLE
+"63-year-old patient with BMI 16.7, with no diagnosed conditions, on stable medications, severe liver disease, recent cancer",NOT_ELIGIBLE
+"37-year-old patient with BMI 20.7, diagnosed with type2 diabetes and high cholesterol, on stable medications, no exclusions",ELIGIBLE
+"22-year-old patient with BMI 24.1, diagnosed with type2 diabetes, high cholesterol and arthritis, on stable medications, no exclusions",ELIGIBLE
+"23-year-old patient with BMI 17.2, with no diagnosed conditions, on stable medications, severe liver disease, recent cancer, allergy to study drug",NOT_ELIGIBLE
+"64-year-old patient with BMI 18.6, diagnosed with hypertension, on stable medications, no exclusions",ELIGIBLE
+"61-year-old patient with BMI 28.0, diagnosed with high cholesterol and asthma, on stable medications, no exclusions",ELIGIBLE
+"24-year-old patient with BMI 30.2, diagnosed with hypertension, on stable medications, pregnant, severe liver disease, recent cancer, allergy to study drug",NOT_ELIGIBLE
+"21-year-old patient with BMI 15.4, with no diagnosed conditions, on stable medications, pregnant",NOT_ELIGIBLE
+"69-year-old patient with BMI 18.7, diagnosed with type2 diabetes, on stable medications, severe liver disease, allergy to study drug",NOT_ELIGIBLE
+"38-year-old patient with BMI 21.0, diagnosed with asthma, high cholesterol and arthritis, on stable medications, no exclusions",ELIGIBLE
+"36-year-old patient with BMI 22.7, diagnosed with hypertension, on stable medications, no exclusions",ELIGIBLE
+"54-year-old patient with BMI 25.8, diagnosed with arthritis, hypertension and asthma, on stable medications, no exclusions",ELIGIBLE
+"41-year-old patient with BMI 29.3, diagnosed with arthritis, high cholesterol and hypertension, on stable medications, no exclusions",ELIGIBLE
+"25-year-old patient with BMI 18.1, with no diagnosed conditions, not on stable medications, pregnant",NOT_ELIGIBLE
+"43-year-old patient with BMI 23.4, diagnosed with type2 diabetes, asthma and arthritis, on stable medications, no exclusions",ELIGIBLE
+"67-year-old patient with BMI 24.2, diagnosed with asthma and arthritis, not on stable medications, pregnant",NOT_ELIGIBLE
+"70-year-old patient with BMI 26.1, with no diagnosed conditions, on stable medications, pregnant, severe liver disease",NOT_ELIGIBLE
+"40-year-old patient with BMI 27.2, with no diagnosed conditions, on stable medications, pregnant, severe liver disease, recent cancer, allergy to study drug",NOT_ELIGIBLE
+"38-year-old patient with BMI 21.2, diagnosed with type2 diabetes, high cholesterol and arthritis, on stable medications, no exclusions",ELIGIBLE

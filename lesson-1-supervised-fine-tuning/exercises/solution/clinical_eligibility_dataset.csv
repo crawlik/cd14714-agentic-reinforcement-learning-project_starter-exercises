@@ -1,0 +1,11 @@
+patient_summary,eligibility_status
+"45-year-old male with Type 2 Diabetes, HbA1c 7.5%",Eligible
+"30-year-old female with Type 2 Diabetes, HbA1c 8.0%",Eligible
+"55-year-old male with Type 2 Diabetes, HbA1c 9.2%",Eligible
+"40-year-old female with Type 2 Diabetes, HbA1c 7.8%",Eligible
+"28-year-old male with Type 2 Diabetes, HbA1c 8.5%",Eligible
+"25-year-old female with Type 2 Diabetes, HbA1c 7.0%",Eligible
+"60-year-old male with Type 2 Diabetes, HbA1c 9.8%",Ineligible (HbA1c above 9.0%)
+35-year-old pregnant female with Type 2 Diabetes,Ineligible (Pregnant)
+"42-year-old male with kidney failure, Type 2 Diabetes",Ineligible (Kidney Failure)
+48-year-old female on insulin therapy with Type 2 Diabetes,Ineligible (Currently on Insulin Therapy)

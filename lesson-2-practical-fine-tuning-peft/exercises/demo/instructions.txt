@@ -1,0 +1,118 @@
+Agentic Reinforcement Learning Demo2
+
+Practical Fine-Tuning with PEFT for Movie Review Sentiment Classification
+Hello, and welcome to the second demo in this course on Agentic Reinforcement Learning. Today, we're going to be tackling practical fine-tuning with PEFT for movie review sentiment classification.
+
+This demo is going to show how to use an agent to create a label dataset and then use that data to fine tune a specialized model to perform one specific task reliably. Now, let's look at the code.
+
+Step 1: Creating a High-Quality Dataset
+First, we need a high-quality dataset. We generate movie reviews using this set of templates.
+
+import pandas as pd
+from sklearn.datasets import fetch_20newsgroups
+from npcpy.npc_compiler import NPC
+
+def prepare_movie_review_data():
+    # Using 20newsgroups as proxy for review data
+    categories = ['rec.arts.movies.current-films', 'rec.arts.movies.past-films']
+    newsgroups = fetch_20newsgroups(
+        subset='train',
+        categories=categories,
+        remove=('headers', 'footers', 'quotes')
+    )
+
+    reviews = []
+    for text, label in zip(newsgroups.data[:100], newsgroups.target[:100]):
+        sentiment = 'positive' if len(text.split()) > 50 else 'negative'
+        reviews.append({'text': text[:200], 'sentiment': sentiment})
+
+    return pd.DataFrame(reviews)
+Step 2: Using an Agent to Label Data
+Then, instead of labeling whether or not the reviews are positive or negative by hand, we use a sentiment classifier agent.
+
+We give it 100 unlabeled movie reviews and prompt it to return a structured JSON object containing the sentiment for each. This step uses one agent to programmatically create the training data our model will learn from.
+
+def movie_review_lora_demo():
+    df = prepare_movie_review_data()
+
+    # Create the LoRA trainer agent
+    trainer_npc = NPC(
+        name='LoRA Trainer',
+        primary_directive='Configure LoRA parameters for sentiment analysis fine-tuning',
+        model='llama3.2',
+        provider='ollama'
+    )
+
+    config_format = '''
+    {"lora_config": {
+        "r": 16,
+        "lora_alpha": 32,
+        "target_modules": ["q_proj", "v_proj"],
+        "lora_dropout": 0.05,
+        "learning_rate": 2e-4,
+        "epochs": 3
+    }}
+    '''
+
+    prompt = f"""Configure LoRA parameters for sentiment analysis on movie reviews.
+Dataset size: {len(df)} samples
+Task: Binary sentiment classification
+
+Recommend optimal LoRA hyperparameters.
+Format as: {config_format}"""
+
+    response = trainer_npc.get_llm_response(prompt, format='json')
+    config = response['response']['lora_config']
+In our demo example, the agent labeled 57 reviews as negative and 43 as positive.
+
+Step 3: Parameter-Efficient Fine-Tuning (PEFT)
+Now, we fine-tune a general-purpose model on this data.
+
+Why Not Full Fine-Tuning?
+Fine-tuning the whole model would be a huge undertaking. You'd be changing all 1 billion parameters just to teach it one simple task, and would likely end up eroding its understanding capabilities.
+
+The PEFT Approach
+Parameter-efficient fine-tuning, or PEFT, instead of retraining everything:
+
+We freeze the entire base model
+Then we attach a small new set of layers called a LoRA adapter
+We only train this tiny adapter, which is just a fraction of the total size
+In this case, only 5.15% of the parameters
+    # Save training data and config
+    df.to_csv('movie_reviews_training.csv', index=False)
+    config_df = pd.DataFrame([config])
+    config_df.to_csv('lora_config.csv', index=False)
+
+    print("LoRA configuration and training data prepared")
+    print(f"Config: {config}")
+    return df, config
+
+movie_data, lora_config = movie_review_lora_demo()
+The base model still provides all of the general language understanding, but the adapter learns the specific patterns of our task.
+
+Step 4: Testing the Specialized Model
+Finally, after training, we test our newly specialized model. When given new unseen reviews, it correctly outputs a single clean word, positive or negative.
+
+Results and Limitations
+Finally, after training, we test our newly specialized model. When given new unseen reviews:
+
+In some cases, it outputs a single clean word, positive or negative, as I was trying to do
+In others, it seems to add some extra information
+This indicates that our limited training is probably not going to get us very far. You can see how this would improve as you scale up the number of examples and increase the training time.
+
+Your Turn
+In your exercise, you'll get to apply this methodology to a clinical health dataset, training a specialized model to produce structured outputs.
+
+Key Takeaways
+Agents can programmatically generate labeled training data, eliminating manual labeling
+PEFT trains only 5-15% of parameters, preserving the base model's knowledge
+LoRA adapters attach small trainable layers while freezing the base model
+Limited training data may produce inconsistent outputs that improve with scale
+This methodology applies to any structured output task, from sentiment to clinical data
+What You Learned
+Technique: Using an LLM agent to automatically label training data for fine-tuning
+
+Efficiency: PEFT trains a tiny fraction of parameters compared to full fine-tuning
+
+Trade-off: Limited training data yields inconsistent results that scale improves
+

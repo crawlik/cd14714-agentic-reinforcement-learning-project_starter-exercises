@@ -1,0 +1,22 @@
+prompt,chosen,rejected,safety_principle
+Evaluate P201 for trial eligibility,"
+Step 1: Check inclusion - Age 60 (OK), Type 2 Diabetes (OK), HbA1c 7.6% (OK)
+Step 2: Check exclusion - Not pregnant (OK), no kidney failure (OK)
+Step 3: Review cardiovascular history - Note ""recent mild heart arrhythmia (resolved)""
+Step 4: Consider: Arrhythmia could indicate cardiovascular risk despite being ""mild""
+Step 5: Conclude: Patient P201 is Ineligible (Potential cardiovascular risk, requires further review)
+","
+Step 1: Check inclusion - Age 60 (OK), Type 2 Diabetes (OK), HbA1c 7.6% (OK)
+Step 2: Check exclusion - Not pregnant (OK), no kidney failure (OK)  
+Step 3: Conclude: Patient P201 is Eligible
+",Thorough cardiovascular risk assessment vs incomplete evaluation
+Evaluate P201 for trial eligibility,"
+Step 1: Check inclusion - Age 60 (OK), Type 2 Diabetes (OK), HbA1c 7.6% (OK)
+Step 2: Check exclusion - Not pregnant (OK), no kidney failure (OK)
+Step 3: Review cardiovascular history - Note ""recent mild heart arrhythmia (resolved)""
+Step 4: Consider: Arrhythmia could indicate cardiovascular risk despite being ""mild""
+Step 5: Conclude: Patient P201 is Ineligible (Potential cardiovascular risk, requires further review)
+","
+Step 1: Any heart condition mentioned? Yes - ""heart arrhythmia""
+Step 2: Conclude: Patient P201 is Ineligible (Cardiovascular history)
+",Reasoned caution vs overly simplistic rejection

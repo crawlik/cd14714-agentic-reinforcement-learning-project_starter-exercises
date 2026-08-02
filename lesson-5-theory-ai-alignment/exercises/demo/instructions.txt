@@ -1,0 +1,123 @@
+Agentic Reinforcement Learning Demo5
+
+Creating Preference Pairs
+Hello, and welcome back. In this demo, we will learn how to create preference pairs by having an evaluator agent systematically rank different responses to the same prompt.
+
+The Approach
+Let's look at the approach, we start by defining an evaluator agent with a specific directive to rigorously assess responses on multiple dimensions like:
+
+Age appropriateness
+Clarity
+Accuracy
+Helpfulness
+Alignment with user intent
+This evaluator isn't just scoring, it's providing detailed justifications for each criterion on a 1-10 scale.
+
+import pandas as pd
+from npcpy.npc_compiler import NPC
+
+def response_ranking_demo():
+    evaluator = NPC(
+        name='Response Evaluator',
+        primary_directive='Rank AI responses for quality and helpfulness',
+        model='llama3.2',
+        provider='ollama'
+    )
+
+    prompt = "Explain photosynthesis to a 10-year-old"
+Generating Three Different Responses
+For a prompt asking for a photosynthesis explanation suitable for a 10-year-old, we generate three different responses:
+
+Response 1: Technically Accurate but Formal
+One is technically accurate, but uses formal academic language with terms like biochemical pathways and Calvin cycle.
+
+Response 2: Friendly and Accessible
+Another uses a friendly analogy, comparing photosynthesis to cooking, keeping the science accurate while making it accessible.
+
+Response 3: Too Technical
+The third goes deep into photosynthetic mechanics and electron transport chains, completely inappropriate for the target audience.
+
+    responses = [
+        "Photosynthesis is the process by which plants convert light energy into chemical energy through complex biochemical reactions involving chlorophyll, carbon dioxide, and water molecules.",
+        "Plants eat sunlight! They use their green leaves to catch sunshine and turn it into food, just like how you eat lunch to get energy to play.",
+        "Photosynthesis involves the Calvin cycle and light-dependent reactions in chloroplasts where ATP and NADPH are produced."
+    ]
+Detailed Evaluation Process
+The evaluator assesses each response individually, generating a detailed breakdown of strengths and weaknesses. It captures not just whether a response is good or bad, but specifically how well it serves the stated goal of explaining complex concept to a young learner without dumbing it down.
+
+    ranking_data = []
+
+    for i, response in enumerate(responses, 1):
+        evaluation_prompt = f"""Rate this response to "{prompt}" on a scale of 1-10 for:
+- Age-appropriateness
+- Clarity
+- Accuracy
+- Helpfulness
+
+Response {i}: {response}
+
+Provide scores and brief reasoning."""
+
+        eval_result = evaluator.get_llm_response(evaluation_prompt)
+
+        ranking_data.append({
+            'response_id': i,
+            'response_text': response,
+            'evaluation': eval_result['response'],
+            'word_count': len(response.split()),
+            'complexity_score': len([w for w in response.split() if len(w) > 8])
+        })
+Creating Preference Pairs
+From these evaluations, we extract preference pairs by making direct comparisons. The response that perform best becomes chosen, while lower performing ones become rejected.
+
+We record the reasoning behind each preference, why one response aligns better with the user's actual needs than another.
+
+    # Create preference pairs (best vs worst typically)
+    preference_pairs = []
+    best_response = responses[1]  # Most age-appropriate
+    worst_response = responses[2]  # Too technical
+
+    preference_pairs.append({
+        'prompt': prompt,
+        'chosen': best_response,
+        'rejected': worst_response,
+        'reason': 'Age-appropriate language vs overly technical'
+    })
+
+    preference_pairs.append({
+        'prompt': prompt,
+        'chosen': best_response,
+        'rejected': responses[0],
+        'reason': 'Simple explanation vs unnecessarily complex'
+    })
+
+    ranking_df = pd.DataFrame(ranking_data)
+    preference_df = pd.DataFrame(preference_pairs)
+
+    ranking_df.to_csv('response_rankings.csv', index=False)
+    preference_df.to_csv('preference_pairs.csv', index=False)
+
+    print("Response ranking and preference pairs created")
+    return ranking_df, preference_df
+
+rankings, preferences = response_ranking_demo()
+Results
+Here we can see the agent providing responses and scores for the different answers.
+
+The Value of Preference Pairs
+These preference pairs now contain the signal we need, concrete examples of responses that successfully balance accuracy with accessibility, compared against responses that fail in specific ways.
+
+The model can learn from these comparisons what it means to communicate effectively to a particular audience, generalizing far beyond the specific examples provided.
+
+Key Takeaways
+Evaluator agents can systematically assess responses across multiple quality dimensions
+Detailed scoring with justifications captures nuanced quality differences
+Preference pairs compare best vs worst responses with explicit reasoning
+Chosen/rejected structure teaches models what makes responses appropriate for specific audiences
+Comparative learning generalizes beyond specific examples to broader communication principles
+What You Learned
+Technique: Using evaluator agents to systematically rank response quality
+
+Data Structure: Creating chosen/rejected preference pairs with reasoning
+
+Signal: Capturing what makes responses appropriate for specific audiences and contexts

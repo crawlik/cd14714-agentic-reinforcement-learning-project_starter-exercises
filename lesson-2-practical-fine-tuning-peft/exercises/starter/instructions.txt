@@ -1,0 +1,210 @@
+Exercise 2: PEFT Fine-Tuning with LoRA
+
+Parameter-Efficient Fine-Tuning for Clinical Eligibility Prediction
+In this hands-on exercise, you will use Parameter-Efficient Fine-Tuning (PEFT) with LoRA adapters to fine-tune a language model on the clinical eligibility dataset you created in Exercise 1.
+
+Prerequisites
+Tools and Environment:
+
+Python 3.8 or higher
+Libraries: torch, transformers, peft, trl, datasets, pandas
+GPU access recommended (but CPU will work, just slower)
+Access to starter code: lesson-2-practical-fine-tuning-peft/exercises/starter/starter.py
+Completed Exercise 1 with clinical_sft_dataset.csv file
+Knowledge Requirements:
+
+Understanding of supervised fine-tuning concepts
+Basic familiarity with transformer models
+Understanding of LoRA (Low-Rank Adaptation) principles
+Python programming
+Objectives
+By the end of this exercise, you will be able to:
+
+Load and format a dataset for SFT training
+Configure LoRA parameters for parameter-efficient fine-tuning
+Set up and run a supervised fine-tuning process
+Validate a fine-tuned model's performance
+Understand the trade-offs in PEFT hyperparameter selection
+Background
+What is PEFT? Instead of fine-tuning all billion parameters of a language model, PEFT adds small "adapter" layers that train only 5-15% of parameters. This:
+
+Reduces training time and memory requirements
+Preserves the base model's general knowledge
+Enables task-specific specialization
+LoRA (Low-Rank Adaptation):
+
+Adds small trainable matrices to attention layers
+Key parameters: r (rank), alpha (scaling), dropout, target_modules
+Steps
+Step 1: Install Required Libraries
+High-level instruction: Set up your Python environment
+
+Details:
+
+pip install torch transformers peft trl datasets pandas
+Verify installations by importing each library
+Check that CUDA is available if you have a GPU: torch.cuda.is_available()
+Step 2: Load and Format the Dataset
+High-level instruction: Complete the load_and_format_dataset(csv_path: str) function
+
+Details:
+
+Load the CSV file using pandas
+Read the patient_summary and eligibility_status columns
+Format each example as a text prompt-completion pair:
+Prompt format: "Determine eligibility: [patient_summary]"
+Completion format: "[eligibility_status]"
+Convert to a list of dictionaries with keys: text (combined prompt + completion)
+Return as a list that can be converted to a Dataset object
+Example formatted entry:
+
+{
+    "text": "Determine eligibility: 45-year-old patient with BMI 24.5...\nELIGIBLE"
+}
+Step 3: Configure LoRA Parameters
+High-level instruction: Complete the configure_lora() function to return a LoraConfig object
+
+Details:
+
+Set r (rank): Start with 8 (lower = more efficient, higher = more expressive)
+Set lora_alpha: Typically 2x the rank (e.g., 16 if r=8)
+Set lora_dropout: 0.1-0.15 for regularization
+Set target_modules: Target attention layers ["q_proj", "v_proj"]
+Set task_type: "CAUSAL_LM" for language modeling
+Hints:
+
+Higher rank = more parameters to train = potentially better performance but slower
+Alpha controls the scaling of LoRA updates
+Targeting more modules (q, k, v, o projections) = more parameters
+Step 4: Implement the Training Loop
+High-level instruction: Complete the run_sft_training(config, train_examples) function
+
+Details:
+
+Load the base model specified in config.base_model_name
+Load the corresponding tokenizer
+Convert train_examples to a Dataset object
+Create a LoraConfig using your configure_lora() function
+Set up TrainingArguments:
+output_dir: config.output_model_path
+num_train_epochs: config.num_train_epochs
+per_device_train_batch_size: config.per_device_train_batch_size
+learning_rate: config.learning_rate
+gradient_accumulation_steps: config.gradient_accumulation_steps
+Initialize SFTTrainer with model, training args, dataset, and peft_config
+Call trainer.train() to start training
+Save the model using trainer.save_model()
+Step 5: Implement Model Validation
+High-level instruction: Complete the validate_model(model, tokenizer, val_examples) function
+
+Details:
+
+Take a few validation examples (patients not in training set)
+For each example:
+Format as a prompt: "Determine eligibility: [patient_summary]"
+Use tokenizer.encode() to convert to token IDs
+Use model.generate() to get the model's prediction
+Decode the output with tokenizer.decode()
+Check if prediction matches actual eligibility status
+Calculate accuracy: (correct predictions / total predictions)
+Calculate average confidence (if using logits)
+Return metrics as a tuple: (accuracy, confidence)
+Step 6: Run Training and Monitor Progress
+High-level instruction: Execute your training script and observe the results
+
+Sub-steps:
+
+Run python starter.py
+Monitor training loss in the output
+Watch for signs of overfitting (loss decreasing then increasing)
+Check GPU/CPU memory usage
+Wait for training to complete (may take 10-30 minutes depending on hardware)
+Step 7: Tune Hyperparameters
+High-level instruction: Experiment with different configurations to improve performance
+
+Sub-steps:
+
+Try different LoRA ranks: 4, 8, 16, 32
+Adjust learning rates: 1e-5, 3e-5, 5e-5
+Modify training epochs: 10, 20, 30
+Compare training time and final accuracy
+Document which configuration works best
+Expected Output
+Your completed exercise should produce:
+
+A trained model saved in models/sft_prediction_model_gemma_270m/
+Training logs showing decreasing loss
+Validation metrics showing reasonable accuracy (>70%)
+LoRA adapter weights (small files, ~1-5% of full model size)
+Console output example:
+
+Loading dataset...
+Found 100 training examples
+Starting SFT training...
+Epoch 1/20 - Loss: 1.234
+Epoch 5/20 - Loss: 0.567
+Epoch 10/20 - Loss: 0.234
+...
+Training completed!
+Validating model...
+Validation Accuracy: 85.0%
+Model saved to models/sft_prediction_model_gemma_270m/
+Success Criteria
+Your implementation is successful when:
+
+✓ Dataset loads correctly with proper formatting
+✓ LoRA config is properly initialized
+✓ Training runs without errors and loss decreases
+✓ Model saves successfully
+✓ Validation accuracy is above random chance (>50%)
+✓ Model makes sensible predictions on new patient examples
+Common Pitfalls to Avoid
+Configuration Errors:
+
+Mismatched tokenizer and model
+Incorrect target modules for LoRA (not all models use same layer names)
+Batch size too large causing out-of-memory errors
+Training Issues:
+
+Learning rate too high (causing loss to explode)
+Learning rate too low (no learning)
+Not enough training data (less than 50 examples)
+Overfitting (training for too many epochs on small dataset)
+Data Formatting:
+
+Inconsistent prompt formatting between training and inference
+Not properly tokenizing the dataset
+Including test data in training set
+Debugging Tips
+If training fails:
+
+Out of Memory: Reduce per_device_train_batch_size to 1, increase gradient_accumulation_steps
+Loss not decreasing: Check learning rate, verify data is properly formatted
+Poor validation: Check if model is overfitting, try more training data or regularization
+Slow training: Use GPU if available, reduce dataset size for initial testing
+Extension Challenges (Optional)
+If you complete the basic exercise, try these extensions:
+
+Experiment with different base models: Try microsoft/phi-2 or other small models
+Implement early stopping: Stop training when validation loss stops improving
+Add logging: Use W&B or TensorBoard to track training metrics
+Multi-task learning: Add additional clinical tasks to the training data
+Quantization: Load model in 4-bit or 8-bit mode for efficiency
+Understanding Your Results
+Good signs:
+
+Training loss decreases smoothly
+Validation accuracy improves over epochs
+Model predictions match expected eligibility for clear-cut cases
+Warning signs:
+
+Loss fluctuates wildly → learning rate too high
+Loss plateaus immediately → learning rate too low or data issue
+Perfect training accuracy but poor validation → overfitting
+Next Steps
+After completing this exercise:
+
+You have a specialized clinical eligibility model
+Understand the PEFT training process
+Can apply this approach to other fine-tuning tasks
+Ready to learn about agent architecture in Exercise 3

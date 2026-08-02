@@ -1,0 +1,174 @@
+Agentic Reinforcement Learning Demo3
+
+Agent Design and Reasoning
+Hello, and welcome to the third demo, in this course, on agentic reinforcement learning. Today, we're going to be talking about agent design and reasoning.
+
+An agent needs a blueprint before it can operate. A clear design makes sure it behaves predictably and achieves its goals reliably.
+
+Creating a Flight Booking Agent
+In this demo, we're going to be creating a flight booking agent with four tools:
+
+search_flights - Search available flights
+book_flight - Book a flight
+get_flight_status - Check flight status
+cancel_booking - Cancel bookings
+Each tool performs a specific function in the booking life cycle.
+
+import pandas as pd
+from datetime import datetime, timedelta
+from npcpy.npc_compiler import NPC
+
+def search_flights(origin, destination, date, passengers=1):
+    # Mock flight search
+    flights = [
+        {'airline': 'DeltaAir', 'price': 299, 'departure': '08:00', 'arrival': '11:30'},
+        {'airline': 'United', 'price': 345, 'departure': '14:15', 'arrival': '17:45'},
+        {'airline': 'Southwest', 'price': 279, 'departure': '19:30', 'arrival': '22:55'}
+    ]
+    return pd.DataFrame(flights)
+
+def book_flight(flight_details, passenger_info):
+    # Mock booking
+    booking_ref = f"BK{datetime.now().strftime('%Y%m%d%H%M')}"
+    return {'booking_reference': booking_ref, 'status': 'confirmed'}
+The Comprehensive Design Document
+We also generate a comprehensive design document that formalizes the agent's architecture. This document specifies:
+
+Primary Objectives
+Understand user requirements
+Search available flights
+Present options
+Process bookings
+Manage the booking life cycle
+Tool Specifications
+It lists all available tools with their:
+
+Inputs
+Outputs
+Use cases
+State Space
+The agent tracks:
+
+User travel preferences
+Search results
+Booking details
+Action Space
+Information gathering
+Search execution
+Option comparison
+Booking actions
+Booking management
+def flight_booking_agent_demo():
+    flight_agent = NPC(
+        name='Flight Booking Agent',
+        primary_directive='Help users search and book flights efficiently',
+        model='llama3.2',
+        provider='ollama',
+        tools=[search_flights, book_flight]
+    )
+
+    design_doc = f"""
+    Flight Booking Agent Design Document
+
+    Primary Goal: Search and book flights based on user requirements
+
+    Available Tools:
+    - search_flights(origin, destination, date, passengers)
+    - book_flight(flight_details, passenger_info)
+
+    State Space:
+    - User preferences (dates, destinations, budget)
+    - Search results
+    - Booking status
+
+    Action Space:
+    - Search for flights
+    - Compare options
+    - Process booking
+    - Handle payment
+
+    Reasoning Trace Example:
+    1. Observe: User wants NYC to LAX on March 15
+    2. Think: Need to search available flights for that route/date
+    3. Act: Call search_flights('NYC', 'LAX', '2024-03-15')
+    4. Observe: Found 3 flights with different prices/times
+    5. Think: Present options and ask for preference
+    6. Act: Show flight comparison
+    """
+
+    with open('flight_agent_design.txt', 'w') as f:
+        f.write(design_doc)
+Detailed Reasoning Trace Examples
+The design document also includes detailed reasoning trace examples.
+
+For a Simple Booking Flow
+The agent:
+
+Observes a user query about New York to Los Angeles on March 15
+Thinks about what information is needed
+Calls the search function
+Receives five flight options
+Presents them to the user
+Collects passenger details when the user selects a flight
+Executes the booking
+Provides confirmation
+For a Budget Constrained Search
+The agent:
+
+Extracts the constraint
+Asks for missing information if needed
+Searches within the price limit
+Presents filtered results
+For Cancellations
+The agent:
+
+Verifies the booking exists
+Confirms it can be canceled
+Processes the cancellation
+Returns the refund amount
+Testing the Agent
+A demo tests the agent against three scenarios:
+
+Scenario 1: Simple Search
+For a simple search from New York to Los Angeles on March 15, the agent correctly calls the search tool and returns five flight options sorted by price with airlines, departure times, and seat availability.
+
+Scenario 2: Budget Constraint
+For a budget constraint search, the agent extracts the constraint, asks for missing information if needed, searches within the price limit, and presents filtered results.
+
+Scenario 3: Complete Booking
+For a complete booking from NYC to SFO, tomorrow with passenger details, the agent again calls search, but doesn't proceed to the booking step. Suggesting it understands the request requires multiple steps, but stops after the first tool call.
+
+    # Test the agent
+    test_query = "I need a flight from New York to Los Angeles on March 15th"
+    response = flight_agent.get_llm_response(test_query, auto_process_tool_calls=True)
+
+    print("Flight Agent Design Document created")
+    print(f"Test response: {response['response']}")
+    return flight_agent
+
+flight_agent = flight_booking_agent_demo()
+Performance Analysis
+The performance analysis shows:
+
+All three scenarios used exactly one tool, the search function
+No bookings were actually completed
+The agent returned flight data tables rather than natural language responses, explaining the options
+The Gap
+The design document is comprehensive, but the actual agent behavior doesn't follow the multi-step reasoning traces outlined in the design. The agent searches when asked, but doesn't continue to subsequent steps like booking or cancellation handling.
+
+What's Next
+Through the next few lessons, you will learn how to create the examples that agent or teach a model to act agentically in the way that we are now used to.
+
+Key Takeaways
+Agents need comprehensive design documents specifying objectives, tools, state space, and action space
+Reasoning traces map out multi-step decision flows from observation through action
+Design documents serve as blueprints for predictable agent behavior
+Current limitations show agents may not follow complete multi-step traces without proper training
+Training data generation will teach models to execute full agentic reasoning loops
+What You Learned
+Architecture: Creating comprehensive agent design documents with tools, state, and actions
+
+Reasoning: Mapping out observe-think-act cycles for different scenarios
+
+Reality Check: Understanding the gap between agent design and actual behavior without training
+

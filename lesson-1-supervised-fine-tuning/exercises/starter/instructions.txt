@@ -1,0 +1,157 @@
+Exercise 1: Clinical SFT Dataset Generation
+
+Creating Synthetic Training Data for Supervised Fine-Tuning
+In this hands-on exercise, you will create a synthetic dataset of clinical trial eligibility assessments that can be used to train a supervised fine-tuned model.
+
+Prerequisites
+Tools and Environment:
+
+Python 3.8 or higher
+Libraries: json, random, typing
+Text editor or IDE
+Access to the starter code: lesson-1-supervised-fine-tuning/exercises/starter/starter.py
+Knowledge Requirements:
+
+Basic understanding of clinical trial eligibility criteria
+Python programming fundamentals
+Understanding of supervised learning datasets (input-output pairs)
+Objectives
+By the end of this exercise, you will be able to:
+
+Generate synthetic patient profiles with realistic medical characteristics
+Implement eligibility checking logic based on inclusion/exclusion criteria
+Create natural language summaries of patient data
+Build a complete SFT training dataset in CSV format
+Understand the structure of supervised fine-tuning data
+Background
+Clinical trial eligibility requires checking patients against specific criteria:
+
+Inclusion Criteria:
+
+Age range: 18-65 years
+BMI range: 18.5-30.0
+Conditions: hypertension, type 2 diabetes, or high cholesterol
+Stable medication regimen
+Exclusion Criteria:
+
+Pregnancy
+Severe liver disease
+Recent cancer diagnosis
+Allergy to study drug
+Your task is to generate patient profiles and determine their eligibility.
+
+Steps
+Step 1: Understand the Starter Code
+Review the provided INCLUSION_CRITERIA and EXCLUSION_CRITERIA dictionaries
+Examine the structure of the generate_synthetic_patient() function
+Note the TODO markers indicating where you need to implement logic
+Step 2: Implement Eligibility Checking Logic
+High-level instruction: Complete the check_eligibility(patient: Dict) -> bool function
+
+Details:
+
+Check if patient age falls within the acceptable range (18-65)
+Verify BMI is between 18.5 and 30.0
+Confirm patient has at least one of the required conditions
+Ensure medication_stable is True
+Check that NONE of the exclusion criteria are True
+Return True only if ALL conditions are met
+Hints:
+
+Use the INCLUSION_CRITERIA and EXCLUSION_CRITERIA constants
+Remember: a patient must meet ALL inclusion criteria AND have NONE of the exclusion criteria
+Step 3: Create Natural Language Patient Summaries
+High-level instruction: Complete the create_patient_summary(patient: Dict) -> str function
+
+Details:
+
+Convert the patient dictionary into a readable text summary
+Include age, BMI, and conditions in the summary
+Mention medication stability status
+Note any exclusion criteria that apply
+Format it as a single coherent sentence or short paragraph
+Example output format:
+
+"45-year-old patient with BMI 24.5, diagnosed with hypertension and type 2 diabetes, on stable medications"
+Step 4: Generate the Complete Dataset
+High-level instruction: Verify the generate_sft_dataset() function works correctly
+
+Details:
+
+The function should generate num_pairs patient profiles
+For each patient:
+Generate synthetic patient data
+Check eligibility
+Create natural language summary
+Create label ("ELIGIBLE" or "NOT_ELIGIBLE")
+Return list of (summary, status) tuples
+Step 5: Test and Validate
+High-level instruction: Run your code and validate the output
+
+Details:
+
+Execute the script: python starter.py
+Check that clinical_sft_dataset.csv is created
+Verify the CSV contains:
+A header row with columns: patient_summary, eligibility_status
+At least 10 data rows
+Both ELIGIBLE and NOT_ELIGIBLE examples
+Manually review a few examples to ensure logic is correct
+Step 6: Analyze Your Dataset
+High-level instruction: Review the quality and balance of your generated data
+
+Sub-steps:
+
+Count how many eligible vs not eligible patients you generated
+Check if the eligibility decisions make logical sense
+Ensure the natural language summaries are readable and informative
+Consider edge cases: Are there patients right at the age/BMI boundaries?
+Expected Output
+Your completed exercise should produce:
+
+A CSV file named clinical_sft_dataset.csv
+At least 10 patient-eligibility pairs
+Natural language summaries that are clear and complete
+Correct eligibility labels based on the criteria
+Sample output:
+
+patient_summary,eligibility_status
+"52-year-old patient with BMI 26.3, diagnosed with hypertension, on stable medications, no exclusions","ELIGIBLE"
+"70-year-old patient with BMI 22.1, diagnosed with type 2 diabetes, on stable medications, no exclusions","NOT_ELIGIBLE"
+"35-year-old patient with BMI 28.0, diagnosed with high cholesterol, pregnant","NOT_ELIGIBLE"
+Success Criteria
+Your implementation is successful when:
+
+✓ The check_eligibility() function correctly evaluates all criteria
+✓ Patient summaries are clear, complete, and grammatically correct
+✓ The dataset contains a mix of eligible and ineligible patients
+✓ All eligibility decisions are logically consistent with the criteria
+✓ The CSV file is properly formatted and readable
+Common Pitfalls to Avoid
+Logical Errors:
+
+Forgetting to check ALL inclusion criteria (patient needs ALL, not just one)
+Not properly handling the exclusion criteria (ANY exclusion makes patient ineligible)
+Incorrect age or BMI range checks (off-by-one errors)
+Data Quality:
+
+Summaries that are too vague or missing important information
+Inconsistent formatting in the natural language summaries
+Not including enough variety in patient profiles
+Technical Issues:
+
+Not properly escaping special characters in CSV output
+Forgetting to handle edge cases (empty conditions list, etc.)
+Extension Challenges (Optional)
+If you complete the basic exercise, try these extensions:
+
+Balance the dataset: Modify the generation to produce exactly 50% eligible and 50% ineligible patients
+Add complexity: Include more nuanced conditions like "controlled" vs "uncontrolled" hypertension
+Quality checks: Add validation to ensure no duplicate patients are generated
+Rich summaries: Include medication names and condition severity in the summaries
+Next Steps
+After completing this exercise:
+
+Your dataset will be used in Exercise 2 for PEFT fine-tuning
+Review the generated data to understand what patterns the model will learn
+Consider what biases might exist in synthetic vs real clinical data

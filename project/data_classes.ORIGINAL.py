@@ -3,8 +3,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 import json 
 import numpy as np
-import os
-import re
 from peft import PeftModel
 import random
 import torch 
@@ -208,55 +206,6 @@ Write a brief description of how this person appears and behaves right now."""
         
         return npcpy_get_llm_response(prompt, temperature=0.9).get('response')
 
-# ---------------------------------------------------------------------------
-# PATCH: `PersonDescriptor.generate_description` calls `npcpy_get_llm_response`,
-# which the original file never imports or defines. Without this shim every
-# Stage 2 / Stage 3 scenario dies with a NameError before the agent even runs.
-#
-# Override the backing model without editing code:
-#     export MEETMIND_DESC_MODEL=qwen3:0.6b
-#     export MEETMIND_DESC_PROVIDER=ollama
-# ---------------------------------------------------------------------------
-DESCRIPTION_MODEL = os.environ.get("MEETMIND_DESC_MODEL", "qwen3:0.6b")
-DESCRIPTION_PROVIDER = os.environ.get("MEETMIND_DESC_PROVIDER", "ollama")
-
-_THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL)
-
-
-def npcpy_get_llm_response(prompt, temperature=0.9, model=None, provider=None, **kwargs):
-    """Thin wrapper over npcpy's get_llm_response.
-
-    Kept lazy-imported so that importing data_classes for the SFT stage does not
-    require a running Ollama server. Strips qwen3 <think> blocks, which would
-    otherwise end up inside the person descriptions and pollute both the agent
-    prompts and the trace CSV.
-    """
-    from npcpy.llm_funcs import get_llm_response
-
-    try:
-        response = get_llm_response(
-            prompt,
-            model=model or DESCRIPTION_MODEL,
-            provider=provider or DESCRIPTION_PROVIDER,
-            temperature=temperature,
-            **kwargs,
-        )
-    except TypeError:
-        # older/newer npcpy signatures may not accept temperature
-        response = get_llm_response(
-            prompt,
-            model=model or DESCRIPTION_MODEL,
-            provider=provider or DESCRIPTION_PROVIDER,
-            **kwargs,
-        )
-
-    text = response.get("response") if isinstance(response, dict) else str(response)
-    if not isinstance(text, str):
-        text = str(text)
-    text = _THINK_BLOCK.sub("", text).strip()
-    return {"response": text}
-
-
 # Add training metrics tracking
 @dataclass 
 class TrainingMetrics:
@@ -270,94 +219,32 @@ class TrainingMetrics:
 
 
 
-BASE_PREDICTION_MODEL = os.environ.get("MEETMIND_BASE_MODEL", "google/gemma-3-270m-it")
-
-# The exact user-turn format used in data/sft_training_data.csv. Stage 1 trains
-# on this and Stage 2 must serve on this -- keep them defined in one place.
-PREDICTION_PROMPT_TEMPLATE = (
-    "Person A: {person_a_desc}\n"
-    "Person B: {person_b_desc}\n"
-    "Time: {time_slot}\n"
-    "\n"
-    "What is the likelihood of a successful meeting? "
-    'Respond with JSON: {{"probability": 0.XX, "reason": "word"}}'
-)
-
-
-def build_prediction_prompt(person_a_desc: str, person_b_desc: str, time_slot: str) -> str:
-    return PREDICTION_PROMPT_TEMPLATE.format(
-        person_a_desc=person_a_desc,
-        person_b_desc=person_b_desc,
-        time_slot=time_slot,
-    )
-
-
-def wrap_gemma_turn(user_text: str) -> str:
-    return f"<start_of_turn>user\n{user_text}<end_of_turn>\n<start_of_turn>model\n"
-
-
-def resolve_torch_device() -> str:
-    if torch.cuda.is_available():
-        return "cuda"
-    if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
-        return "mps"
-    return "cpu"
-
-
 class MeetingPredictor:
-    """Wraps the Stage 1 SFT adapter as a callable probability predictor."""
-
-    def __init__(self, model_path: str, base_model: str = None, device: str = None):
-        base_model = base_model or BASE_PREDICTION_MODEL
-        self.device = device or resolve_torch_device()
-
-        self.tokenizer = AutoTokenizer.from_pretrained(base_model, trust_remote_code=True)
-        if self.tokenizer.pad_token is None:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
-
-        base = AutoModelForCausalLM.from_pretrained(base_model, trust_remote_code=True)
-        self.model = PeftModel.from_pretrained(base, model_path)
-        self.model.to(self.device)
-        self.model.eval()
-
-    def predict(self, person_a_desc: str, person_b_desc: str, time_slot: str,
-                max_new_tokens: int = 64) -> dict:
-        prompt = wrap_gemma_turn(
-            build_prediction_prompt(person_a_desc, person_b_desc, time_slot)
-        )
-        inputs = self.tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
-        inputs = {k: v.to(self.device) for k, v in inputs.items()}
-
+    def __init__(self, model_path: str):
+        self.tokenizer = AutoTokenizer.from_pretrained('google/gemma-3-270m-it', trust_remote_code=True)
+        self.tokenizer.pad_token = self.tokenizer.eos_token
+        
+        base_model = AutoModelForCausalLM.from_pretrained('google/gemma-3-270m-it', trust_remote_code=True)
+        self.model = PeftModel.from_pretrained(base_model, model_path)
+    
+    def predict(self, person_a_desc: str, person_b_desc: str, time_slot: str) -> dict:
+        prompt = f"Person A: {person_a_desc}. Person B: {person_b_desc}. Time: {time_slot}. What is the likelihood of a successful meeting? Respond with JSON: {{\"probability\": 0.XX, \"reason\": \"word\"}}"
+        test = f'<start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\n'
+        
+        inputs = self.tokenizer(test, return_tensors='pt', truncation=True, max_length=512)
+        
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
-                max_new_tokens=max_new_tokens,
-                do_sample=False,          # deterministic: this is a regression head in disguise
-                pad_token_id=self.tokenizer.eos_token_id,
+                max_new_tokens=50,
+                do_sample=True,
+                temperature=0.1,
+                pad_token_id=self.tokenizer.eos_token_id
             )
-
-        # decode only the generated continuation, not the echoed prompt
-        generated = outputs[0][inputs["input_ids"].shape[1]:]
-        text = self.tokenizer.decode(generated, skip_special_tokens=True)
-        parsed = safe_extract_json(text)
-        parsed["probability"] = float(np.clip(float(parsed["probability"]), 0.0, 1.0))
-        return parsed
-
-
-_PREDICTOR_CACHE = {}
-
-
-def get_meeting_predictor(model_path: str) -> "MeetingPredictor":
-    """Process-wide singleton.
-
-    Stage 2 calls the prediction tool once per agent iteration across 7 personas
-    x N scenarios. Constructing a MeetingPredictor re-reads Gemma from disk, so
-    building one per call turns a minutes-long run into an hours-long one.
-    """
-    if model_path not in _PREDICTOR_CACHE:
-        print(f"[MeetingPredictor] loading adapter {model_path} (first call only)")
-        _PREDICTOR_CACHE[model_path] = MeetingPredictor(model_path)
-    return _PREDICTOR_CACHE[model_path]
+        
+        result = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        json_part = result.split("model")[-1].strip()
+        return json.loads(json_part)
 
 
 def safe_extract_json(response_text: str) -> dict:
