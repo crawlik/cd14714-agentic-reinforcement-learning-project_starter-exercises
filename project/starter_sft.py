@@ -431,6 +431,11 @@ def main():
     parser.add_argument("--epochs", type=int, default=None, help="override num_train_epochs")
     parser.add_argument("--train-size", type=int, default=None, help="cap training examples")
     parser.add_argument("--output", type=str, default=None, help="override adapter output dir")
+    parser.add_argument("--batch-size", type=int, default=None,
+                        help="per-device batch size (default 2; try 8 on a T4)")
+    parser.add_argument("--grad-accum", type=int, default=None,
+                        help="gradient accumulation steps (default 4; use 1 with --batch-size 8 "
+                             "to keep the effective batch at 8 while cutting forward passes 4x)")
     parser.add_argument("--skip-final-check", action="store_true",
                         help="skip reloading the saved adapter for end-to-end validation")
     args = parser.parse_args()
@@ -467,6 +472,18 @@ def main():
         sft_dataset_examples = sft_dataset_examples[:80]
     if args.epochs is not None:
         sft_config.num_train_epochs = args.epochs
+    if args.batch_size is not None:
+        sft_config.per_device_train_batch_size = args.batch_size
+    if args.grad_accum is not None:
+        sft_config.gradient_accumulation_steps = args.grad_accum
+
+    effective_batch = (
+        sft_config.per_device_train_batch_size * sft_config.gradient_accumulation_steps
+    )
+    print(
+        f"Effective batch size: {effective_batch} "
+        f"({sft_config.per_device_train_batch_size} x {sft_config.gradient_accumulation_steps})"
+    )
 
     print(f"\n STEP 2: Fine-Tuning the Gemma-270m Prediction Model ")
     print(f" {describe_environment()}")

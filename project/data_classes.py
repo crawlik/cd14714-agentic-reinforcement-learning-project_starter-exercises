@@ -360,48 +360,101 @@ def get_meeting_predictor(model_path: str) -> "MeetingPredictor":
     return _PREDICTOR_CACHE[model_path]
 
 
+_CODE_FENCE = re.compile(r"```(?:json|JSON)?", re.IGNORECASE)
+_PROBABILITY_FALLBACK = re.compile(r'["\']?probability["\']?\s*[:=]\s*([01]?\.?\d+)')
+_REASON_FALLBACK = re.compile(r'["\']?reason["\']?\s*[:=]\s*["\']([^"\'\n}]*)')
+
+
+def _first_balanced_object(text: str):
+    """Return the first brace-balanced {...} substring, or None.
+
+    The original implementation used a non-greedy r'(\{.*?\})', which stops at
+    the first closing brace and therefore mangles any nested object. Counting
+    depth is both more correct and lets us detect the truncation case below.
+    """
+    start = text.find("{")
+    if start == -1:
+        return None
+    depth = 0
+    in_string = False
+    escaped = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if escaped:
+            escaped = False
+            continue
+        if ch == "\\":
+            escaped = True
+        elif ch == '"':
+            in_string = not in_string
+        elif not in_string:
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[start:i + 1]
+    return None  # opened but never closed -- generation hit the token limit
+
+
 def safe_extract_json(response_text: str) -> dict:
-    """Extract and parse JSON with proper error handling"""
+    """Extract and parse the model's JSON prediction.
+
+    Hardened against three things the instruction-tuned base model actually does
+    before fine-tuning takes hold, all of which made the original parser raise
+    and -- because the SFT validation loop catches broadly -- silently produced
+    correlation 0.0 / MAE nan as though the model had learned nothing:
+
+      1. wrapping the object in a ```json ... ``` markdown fence
+      2. pretty-printing across lines
+      3. running past max_new_tokens, leaving the object unterminated
+
+    Case 3 falls back to reading the fields out by regex, since a truncated
+    '{"probability": 0.62, "reason": "enga' still contains the number we need.
+    """
+    original = response_text
     try:
-        # Remove extra periods at the end of descriptions
-        response_text = re.sub(r'\.\s*\.+', '.', response_text)
-        
-        # Try multiple extraction patterns
-        patterns = [
-            r'<start_of_turn>model\n(.*?)(?:<end_of_turn>|$)',
-            r'model\n(.*?)(?:<end_of_turn>|$)',
-            r'(\{.*?\})',  # Any JSON-like structure
-        ]
-        
-        json_str = None
-        for pattern in patterns:
-            match = re.search(pattern, response_text, re.DOTALL)
-            if match:
-                json_str = match.group(1).strip()
-                break
-        
-        if not json_str:
-            raise ValueError(f"No JSON found in response: {response_text}")
-        
-        # Clean up common issues
-        json_str = json_str.replace('<end_of_turn>', '').strip()
-        json_str = re.sub(r'\.\s*$', '', json_str)  # Remove trailing periods
-        
-        parsed = json.loads(json_str)
-        
-        # Validate required fields
-        if 'probability' not in parsed:
-            raise ValueError(f"Missing 'probability' field in JSON: {parsed}")
-        
-        prob = float(parsed['probability'])
+        text = _CODE_FENCE.sub(" ", response_text)
+        text = text.replace("<end_of_turn>", " ").replace("<start_of_turn>", " ")
+
+        # strip a leading chat-role marker if the whole turn was decoded
+        marker = re.search(r"\bmodel\b\s*\n", text)
+        if marker and "{" in text[marker.end():]:
+            text = text[marker.end():]
+
+        parsed = None
+        candidate = _first_balanced_object(text)
+        if candidate is not None:
+            try:
+                parsed = json.loads(candidate)
+            except json.JSONDecodeError:
+                # single quotes / trailing commas are common near-misses
+                repaired = re.sub(r",\s*([}\]])", r"\1", candidate.replace("'", '"'))
+                try:
+                    parsed = json.loads(repaired)
+                except json.JSONDecodeError:
+                    parsed = None
+
+        if parsed is None or "probability" not in parsed:
+            prob_match = _PROBABILITY_FALLBACK.search(text)
+            if not prob_match:
+                raise ValueError("no probability field found")
+            reason_match = _REASON_FALLBACK.search(text)
+            parsed = {
+                "probability": prob_match.group(1),
+                "reason": reason_match.group(1).strip() if reason_match else "unparsed",
+            }
+
+        prob = float(parsed["probability"])
         if not (0.0 <= prob <= 1.0):
             raise ValueError(f"Probability {prob} not in valid range [0,1]")
-        
+        parsed["probability"] = prob
         return parsed
-        
+
     except Exception as e:
-        print(f"Failed to parse JSON from response: {response_text}")
-        raise ValueError(f"Failed to parse JSON from response '{response_text}': {str(e)}")
+        raise ValueError(
+            f"Failed to parse JSON from response {original!r}: {e}"
+        ) from None
     
 
 def run_local_agent_evaluation(
