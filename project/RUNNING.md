@@ -25,9 +25,15 @@ predates Gemma 3, so `google/gemma-3-270m-it` fails to load regardless of hyperp
 ```bash
 cd ~/project                 # wherever you cloned the repo
 bash setup_workspace.sh      # CUDA torch + transformers>=4.56 + matching trl/peft
-huggingface-cli login        # Gemma is gated — accept the license on the model page first
+hf auth login                # Gemma is gated — accept the license on the model page first
 python env_check.py
 ```
+
+`setup_workspace.sh` upgrades `huggingface_hub` to 1.x, which drops the
+`huggingface_hub.commands` package. The stale `huggingface-cli` entry point left
+on `PATH` then fails with `ModuleNotFoundError: No module named
+'huggingface_hub.commands'` — that is the upgrade working, not breakage. Use `hf`.
+To skip the interactive flow, `export HF_TOKEN=hf_...` instead.
 
 `setup_workspace.sh` also installs a CUDA build of torch. That alone may unblock you
 without waiting on ticket 2200583 — the driver is present (`nvidia-smi` sees the T4),
@@ -37,13 +43,30 @@ script after the box is recycled.
 ### Mac
 
 ```bash
-source agent-course-env/bin/activate
+cd ~/udacity/sfp-agents
+source agent-course-env/bin/activate          # Python 3.13
 cd cd14714-agentic-reinforcement-learning-project_starter-exercises/project
-huggingface-cli login
+
+# Gemma is gated: accept the license at
+#   https://huggingface.co/google/gemma-3-270m-it
+# while signed in, THEN authenticate. huggingface_hub is 1.x here, so it is
+# `hf auth login`; `huggingface-cli login` still works but is deprecated.
+hf auth login
+
 ollama pull qwen3:0.6b
 ollama pull qwen3:1.7b
+
+# MPS has gaps in op coverage; the fallback keeps a missing kernel from
+# aborting a two-hour run. The tokenizers flag just silences fork warnings.
+export PYTORCH_ENABLE_MPS_FALLBACK=1
+export TOKENIZERS_PARALLELISM=false
+
 python env_check.py
 ```
+
+Ollama must be running (`ollama serve`, or the menu-bar app) for `env_check.py`
+to report the models — it queries `localhost:11434`. That check is only
+blocking for Stages 2–3; Stage 1 does not touch Ollama.
 
 `env_check.py` exits non-zero if anything blocking is wrong. Read its output before
 running anything else — it catches the failure modes that otherwise look like
@@ -61,6 +84,13 @@ python starter_sft.py --smoke
 
 # the real run
 python starter_sft.py
+```
+
+On the Mac, wrap the real run so a closed lid or a dropped terminal does not
+kill two hours of training:
+
+```bash
+caffeinate -i python starter_sft.py 2>&1 | tee sft_run_$(date +%Y%m%d_%H%M).log
 ```
 
 Expect roughly:

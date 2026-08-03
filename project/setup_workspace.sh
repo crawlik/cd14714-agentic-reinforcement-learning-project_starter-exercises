@@ -78,7 +78,14 @@ PY
 
 say "Next"
 cat <<'EOF'
-  huggingface-cli login          # Gemma is a gated repo; accept the license first
+  # Gemma is a gated repo: accept the license at
+  #   https://huggingface.co/google/gemma-3-270m-it
+  # then authenticate. This script installs huggingface_hub 1.x, where the old
+  # `huggingface-cli` entry point is a broken shim -- the CLI is now `hf`.
+  hf auth login
+  #   ...or skip the interactive flow entirely:
+  #   export HF_TOKEN=hf_xxxxxxxxxxxxxxxxx
+
   python env_check.py            # should now be all green except Ollama
   python starter_sft.py --smoke  # ~2 min pipeline check
   python starter_sft.py          # the real run
