@@ -1,0 +1,61 @@
+{
+  "timestamp": "2026-08-03T14:02:55",
+  "environment": "torch 2.13.0+cu126 | transformers 5.14.1 | trl 1.9.2 | peft 0.20.0 | datasets 5.0.1 | device cuda",
+  "hyperparameters": {
+    "base_model_name": "google/gemma-3-270m-it",
+    "output_model_path": "models/sft_prediction_model_gemma_270m",
+    "sft_data_path": "data/sft_training_data.csv",
+    "lora_r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.1,
+    "lora_target_modules": [
+      "q_proj",
+      "v_proj"
+    ],
+    "use_4bit": false,
+    "fp16": false,
+    "bf16": true,
+    "num_train_epochs": 4,
+    "per_device_train_batch_size": 8,
+    "gradient_accumulation_steps": 1,
+    "learning_rate": 3e-05,
+    "weight_decay": 0.01,
+    "logging_steps": 10,
+    "optim": "adamw_torch",
+    "lr_scheduler_type": "cosine_with_restarts",
+    "warmup_ratio": 0.03,
+    "seed": 42,
+    "max_seq_length": 512,
+    "early_stopping_loss": 0.4,
+    "val_max_new_tokens": 64,
+    "val_samples_per_epoch": 25
+  },
+  "epochs_completed": 4,
+  "history": {
+    "train_loss": [
+      2.734772481918335,
+      1.8240095806121825,
+      1.6434886407852174,
+      1.5677071809768677
+    ],
+    "correlation": [
+      -0.27856004158097875,
+      0.0,
+      0.31841414128876433,
+      0.3690808802950028
+    ],
+    "mae": [
+      0.3211592756349804,
+      0.24723697172901868,
+      0.22637930611463947,
+      0.24717755891852888
+    ],
+    "accuracy": [
+      48.0,
+      56.00000000000001,
+      60.0,
+      56.00000000000001
+    ]
+  },
+  "best_correlation": 0.3690808802950028
+}
