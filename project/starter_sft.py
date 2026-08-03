@@ -12,7 +12,6 @@ from datasets import Dataset
 from datetime import datetime
 import argparse
 import json
-import math
 import numpy as np
 import os
 import pandas as pd
@@ -75,14 +74,6 @@ class SFTConfig:
     weight_decay=0.01
         Light regularisation. The target vocabulary is tiny (a probability and
         one word) so aggressive decay mostly just slows convergence.
-
-    lr_scheduler_type="cosine"
-        One continuous decay across the whole run. An earlier version rebuilt
-        the scheduler every epoch (one cosine cycle per epoch); returning to
-        the 3e-5 peak at each epoch boundary repeatedly kicked the model away
-        from the epoch-3/4 optimum, and by epoch 6 of a 12-epoch T4 run it had
-        collapsed to predicting a constant 0.23. A single schedule lets late
-        epochs make ever-smaller refinements instead of re-thrashing.
     """
 
     base_model_name: str = "google/gemma-3-270m-it"
@@ -108,7 +99,7 @@ class SFTConfig:
     weight_decay: float = 0.01
     logging_steps: int = 10
     optim: str = "adamw_torch"
-    lr_scheduler_type: str = "cosine"
+    lr_scheduler_type: str = "cosine_with_restarts"
     warmup_ratio: float = 0.03
     seed: int = 42
 
@@ -345,24 +336,6 @@ def run_sft_fine_tuning(
         max_seq_length=config.max_seq_length,
     )
 
-    # One LR schedule spanning the whole run. trainer.train() builds the
-    # optimizer/scheduler only when they are None, so pre-sizing them for
-    # total_steps here means each per-epoch train() call below continues the
-    # same decay curve rather than restarting from the peak LR. (warmup_ratio
-    # is applied to total_steps, so warmup happens once, at the very start.)
-    steps_per_epoch = math.ceil(
-        math.ceil(len(dataset) / config.per_device_train_batch_size)
-        / config.gradient_accumulation_steps
-    )
-    total_steps = steps_per_epoch * config.num_train_epochs
-    trainer.create_optimizer()
-    trainer.create_scheduler(num_training_steps=total_steps, optimizer=trainer.optimizer)
-    # create_scheduler marks the scheduler as trainer-created, and train()
-    # discards trainer-created schedulers at the start of every call -- which
-    # would silently bring the per-epoch restart back. Clearing the flag makes
-    # train() treat ours as user-provided and keep it across epochs.
-    trainer._created_lr_scheduler = False
-
     print("\n Starting Supervised Fine-Tuning ")
     print(f" {describe_environment()}")
     history = {"train_loss": [], "correlation": [], "mae": [], "accuracy": []}
@@ -371,6 +344,11 @@ def run_sft_fine_tuning(
     for epoch in range(config.num_train_epochs):
         print(f"\n=== EPOCH {epoch + 1}/{config.num_train_epochs} ===")
 
+        # Rebuild the LR schedule each epoch (the optimizer and its Adam moments
+        # persist). With cosine_with_restarts this is exactly one cosine cycle
+        # per epoch; without the reset the schedule is exhausted after epoch 1
+        # and the LR sits at ~0 for the rest of training.
+        trainer.lr_scheduler = None
         trainer.train()
 
         log = [h for h in trainer.state.log_history if "train_loss" in h]
