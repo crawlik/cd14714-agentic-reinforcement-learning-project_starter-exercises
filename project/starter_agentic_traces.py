@@ -16,7 +16,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments
 from trl import SFTTrainer
 from typing import Dict, Any, List, Optional, Any
 
-from data_classes import  get_true_outcome, TimeSlot, ConferenceSimulator, PersonDescriptor, safe_extract_json
+from data_classes import  get_true_outcome, TimeSlot, ConferenceSimulator, PersonDescriptor, safe_extract_json, get_meeting_predictor
 
 from npcpy.npc_compiler import NPC
 from npcpy.llm_funcs import get_llm_response
@@ -238,10 +238,11 @@ def predict_meeting_success_tool(person_a_desc: str, person_b_desc: str, time_sl
     if not os.path.exists(model_path):
         return json.dumps({"status": "error", "message": "SFT model not found."})
     try:
-        # Your code here
-        # Should be two lines        
-        #intermediate = ...
-        #result = intermediate.some_method(...)
+        # get_meeting_predictor is a process-wide singleton: the 270M base +
+        # adapter load from disk once, on the first tool call, not on every one
+        # of the 7 personas x N scenarios x up-to-8 iterations.
+        intermediate = get_meeting_predictor(model_path)
+        result = intermediate.predict(person_a_desc, person_b_desc, time_slot)
 
         if 'probability' not in result:
             return json.dumps({"status": "error", "message": "SFT prediction missing data."})
@@ -283,6 +284,12 @@ class AgentTraceCollector:
                 "ground_truth_prob": trace.get("ground_truth"),
                 "true_outcome": get_true_outcome(trace.get("ground_truth", 0.0)),
                 "agent_outcome": agent_outcome,
+                # Plain YES/NO (or empty) so Stage 3 does not have to parse the
+                # dict repr in agent_outcome back out of the CSV.
+                "agent_recommendation": (agent_outcome or {}).get("recommendation"),
+                # calculate_reward reads this; without the column Stage 3 could
+                # only read the reward back, never honestly recompute it.
+                "completed_naturally": trace.get("completed_naturally", False),
                 "reward": trace.get("reward"),
                 "final_recommendation_reasoning": (trace.get("final_recommendation_parsed") or {}).get("reasoning"),
             }
@@ -294,35 +301,65 @@ class AgentTraceCollector:
 
 class AgentToolLoop:
     # Here we use the npcpy tool use loop because it can auto call our tools for us and report back the results
-    def __init__(self, 
-                 agent: NPC, 
-                 max_iterations: int = 'YOUR CODE HERE'):
+    def __init__(self,
+                 agent: NPC,
+                 max_iterations: int = 8):
         # the number of max iterations should be sufficient to allow the model to get somewhere
         # but shouldnt be so high that it is spending 20 some odd turns deciding what to do..
+        # 8 gives room for one call to each of the 4 tools plus a couple of
+        # reasoning turns and the final JSON; qwen3-class models that haven't
+        # answered by then are looping, not thinking.
 
         self.agent = agent 
         self.max_iterations = max_iterations
-    def _parse_final_json(self, 
+    def _parse_final_json(self,
                           text: str) -> Optional[Dict]:
         try:
             match = re.search(r'\{.*\}', text, re.DOTALL)
-            if not match: 
+            if not match:
                 return None
             data = json.loads(match.group(0))
-            return data
         except json.JSONDecodeError:
             return None
+        if not isinstance(data, dict):
+            return None
+        # qwen3:0.6b frequently lands one key-name away from the spec
+        # ({"final_recommendation": "YES", ...}). Accept the common aliases so a
+        # correct decision is not scored -1.0 over a key name; anything that is
+        # not a plain string (nested dicts etc.) stays unrecognized on purpose.
+        if 'recommendation' not in data:
+            for alias in ('final_recommendation', 'final_answer', 'decision', 'answer'):
+                if isinstance(data.get(alias), str):
+                    data['recommendation'] = data.pop(alias)
+                    break
+        if 'reasoning' not in data:
+            for alias in ('reason', 'rationale', 'explanation'):
+                if isinstance(data.get(alias), str):
+                    data['reasoning'] = data.pop(alias)
+                    break
+        return data
 
     def run_tool_loop(self, initial_prompt: str) -> Dict[str, Any]:
+        # Prompting is STAGED, learned the hard way across three smoke runs with
+        # qwen3:0.6b: (1) schema only injected mid-loop -> agents answered early
+        # with near-miss keys, 0/7 completed; (2) "respond with ONLY this JSON"
+        # in the system prompt -> tool calling fully suppressed, agents invented
+        # tool results, 0/7 tools called; (3) so: no JSON schema anywhere until
+        # at least one real tool call has happened, then the follow-up prompts
+        # ask for the exact two-key JSON. The alias handling in
+        # _parse_final_json catches the residual key-name misses.
         enhanced_directive = self.agent.primary_directive + """
 
-        Think carefully about how to address the user prompt. Call tools. Gather information. 
-
+        Think carefully about how to address the user prompt. You MUST actually call tools
+        to gather evidence before answering -- never describe or invent tool results you did
+        not receive. Start with predict_meeting_success_tool: it gives a trained model's
+        success probability for the meeting and is usually the most informative single tool.
     """
         messages = [{"role": "system", "content": enhanced_directive}]
         raw_responses = []
         final_recommendation_data = None
         completed_naturally = False
+        any_tool_called = False
         current_prompt = initial_prompt
         for i in range(self.max_iterations):
             print(f'itearation {i}')
@@ -331,31 +368,48 @@ class AgentToolLoop:
                 messages=messages,
                 auto_process_tool_calls=True
             )
-            print(response_obj['response'][-500:])
-        
+            # response can be None on a tool-call-only turn; never let a print
+            # kill a multi-hour trace run
+            print(str(response_obj.get('response') or '')[-500:])
 
             raw_responses.append(response_obj)
+            if response_obj.get('tool_calls'):
+                any_tool_called = True
             messages = response_obj.get('messages') or messages
             last_assistant_content = messages[-1].get('content', '')
+            if not isinstance(last_assistant_content, str):
+                # tool-result turns can carry list-shaped content
+                last_assistant_content = json.dumps(last_assistant_content, default=str)
 
-            final_recommendation_data = self._parse_final_json(last_assistant_content)
-            
-            if final_recommendation_data and 'recommendation' in final_recommendation_data and 'reasoning' in final_recommendation_data:
-                 
-                completed_naturally = True
-                break
-        
-            current_prompt = "Are you finished? If so, provide your final JSON recommendation. If not, continue."
-            if i ==1:
-                messages[0]['content'] +='''Once you have sufficient information, 
-                    provide your final recommendation as JSON:
-                {
-                "recommendation": "YES" or "NO", 
-                "reasoning": "detailed explanation of your decision"
-                }
-                Do not include any other keys in your response. Your JSON must only be these two keys. It doesnt matter if you gathered infromation from tools and want to share it with the user, they will be able
-                to see it through the inspection of the tool calling traces. It is importantly only your task to return this information very plainly once it is finished.
-                '''
+            candidate = self._parse_final_json(last_assistant_content)
+
+            if candidate and 'recommendation' in candidate and 'reasoning' in candidate:
+                # Keep the answer either way, but only count the trace as
+                # completed when it rests on at least one real tool call. The
+                # smoke runs showed qwen3:0.6b happily "answering" at iteration
+                # 0 with fabricated tool results; rejecting evidence-free
+                # answers once forces an actual tool call, and an agent that
+                # never complies ends the loop with completed_naturally=False,
+                # which calculate_reward scores as the bad trace it is.
+                final_recommendation_data = candidate
+                if any_tool_called:
+                    completed_naturally = True
+                    break
+                current_prompt = ('You have not called any tool yet, so your answer is not '
+                                  'grounded in evidence. Call predict_meeting_success_tool '
+                                  '(and any other tools you need) now, then give the final '
+                                  'JSON again.')
+                continue
+
+            if not any_tool_called:
+                # JSON is deliberately not mentioned until a real tool call has
+                # happened -- asking for it earlier suppresses tool use.
+                current_prompt = ('Call predict_meeting_success_tool now to get the trained '
+                                  "model's success probability. Do not answer yet.")
+            else:
+                current_prompt = ('Are you finished? If so, respond with ONLY the final JSON: '
+                                  '{"recommendation": "YES" or "NO", "reasoning": "..."} '
+                                  '-- exactly those two keys. If not, continue gathering information.')
 
         return {
             "raw_responses": raw_responses,
@@ -367,6 +421,17 @@ class AgentToolLoop:
 
 
 
+
+
+# Stage 3 DPO-trains Qwen/Qwen3-0.6B, so traces are generated with qwen3:0.6b
+# by default to keep the preference data roughly on-policy -- DPO's signal
+# weakens when the chosen/rejected completions come from a different (larger)
+# model than the one being trained. The starter's qwen3:1.7b is available via
+#     export MEETMIND_TRACE_MODEL=qwen3:1.7b
+# if 0.6b turns out too weak to complete the tool loop (check the smoke run's
+# reward spread before deciding).
+TRACE_AGENT_MODEL = os.environ.get("MEETMIND_TRACE_MODEL", "qwen3:0.6b")
+TRACE_AGENT_PROVIDER = os.environ.get("MEETMIND_TRACE_PROVIDER", "ollama")
 
 
 def generate_agent_traces_for_training(num_scenarios_per_agent: int) -> List[Dict[str, Any]]:
@@ -388,8 +453,8 @@ def generate_agent_traces_for_training(num_scenarios_per_agent: int) -> List[Dic
                 name=config["name"].lower(),
                 primary_directive=config["primary_directive"],
                 tools=TOOLS,
-                model='qwen3:1.7b',
-                provider='ollama',
+                model=TRACE_AGENT_MODEL,
+                provider=TRACE_AGENT_PROVIDER,
             )
             tool_loop = AgentToolLoop(current_agent, max_iterations=8)
             simulator = ConferenceSimulator(num_attendees=50, seed=random.randint(0, 10000))
@@ -434,13 +499,32 @@ Begin your analysis by calling a tool."""
 
 
 if __name__ == "__main__":
-    traces_csv_file = None
-    csv_pattern = "agent_traces_*.csv"
-    existing_csvs = sorted(glob.glob(csv_pattern), key=os.path.getmtime, reverse=True)
-    num_traces_per_agent = 'YOUR CODE HERE'
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Stage 2: generate agent traces")
+    # 3 per agent (21 traces) is the smoke-test size: enough to see the reward
+    # distribution and tool usage without committing hours. The real run is
+    # --traces-per-agent 10 (70 traces; the README asks for 50+). Run the smoke
+    # first -- the expensive failure mode is a long run where every trace scores
+    # -0.75 because the agent never emitted parseable JSON.
+    parser.add_argument("--traces-per-agent", type=int, default=3,
+                        help="scenarios per persona (3=smoke, 10=real run)")
+    args = parser.parse_args()
+
+    print(f"Trace agent model: {TRACE_AGENT_MODEL} ({TRACE_AGENT_PROVIDER}), "
+          f"{args.traces_per_agent} scenarios x {len(system_prompt_configurations)} personas")
+
+    num_traces_per_agent = args.traces_per_agent
     generated_traces_list = generate_agent_traces_for_training(num_traces_per_agent)
     traces_csv_file = f"agent_traces_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     temp_collector = AgentTraceCollector()
     temp_collector.traces = generated_traces_list
     temp_collector.save_traces_to_file(traces_csv_file)
+
+    # A quick health read on the run before anyone starts Stage 3 on bad data
+    rewards = pd.Series([t.get("reward") for t in generated_traces_list])
+    print("\nReward distribution:")
+    print(rewards.value_counts().sort_index().to_string())
+    completed = sum(bool(t.get("completed_naturally")) for t in generated_traces_list)
+    print(f"completed_naturally: {completed}/{len(generated_traces_list)}")
     print(' With your traces saved, we can now start doing reinforcement learning with DPO! hop on over to starter_agentic_rlft.py to begin.')
