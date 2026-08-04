@@ -2,6 +2,8 @@
 CLAUDE.md
 __pycache__/
 project/logs/
+project/dpo_results/
+project/qwen3-dpo-adapter-v1-merged/
 lesson-2-practical-fine-tuning-peft/exercises/starter/models/
 lesson-6-practical-alignment-dpo/exercises/dpo_safety_model/
 lesson-6-practical-alignment-dpo/exercises/qwen3-dpo-adapter-v1/

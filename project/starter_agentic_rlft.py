@@ -65,58 +65,135 @@ def calculate_reward(trace: Dict[str, Any]) -> float:
     tools_used = trace.get("tools_used", [])
     completed_naturally = trace.get("completed_naturally", False)
 
+    # -1.0 is reserved for "no parseable recommendation at all" because the
+    # pairing filter below drops reward <= -1.0 outright: a trace with no
+    # recommendation text cannot even serve as a rejected sample. Every other
+    # failure keeps a reward > -1.0 so it stays available as a rejected sample.
     if not final_rec_data or 'recommendation' not in final_rec_data:
-        return 'YOUR CODE HERE'
+        return -1.0
     if not completed_naturally:
-        return 'YOUR CODE HERE'
+        return -0.75
     if not tools_used:
-        return 'YOUR CODE HERE'
+        return -0.5
 
     agent_outcome = final_rec_data.get('recommendation', 'FAIL').upper()
     if agent_outcome not in ["YES", "NO"]:
-        return 'YOUR CODE HERE'
+        return -0.25
 
     true_outcome = get_true_outcome(trace['ground_truth'])
 
+    # Incorrect is NEGATIVE (unlike Stage 2's 0.1 shaping reward): for
+    # preference pairing the sign encodes chosen-vs-rejected, and the 1.5 gap
+    # between correct and incorrect clears the 0.5 pairing threshold with room.
     if agent_outcome == true_outcome:
-        return 'YOUR CODE HERE'
+        return 1.0
     else:
-        return 'YOUR CODE HERE'
+        return -0.5
+
+
+def _csv_row_to_trace(row: pd.Series) -> Dict[str, Any]:
+    """Rebuild the trace dict calculate_reward expects from a CSV row, so the
+    reward is honestly recomputed from raw evidence rather than read back from
+    the CSV's own reward column (which Stage 2 computed with a different,
+    shaping-oriented scheme: 0.1 for incorrect instead of -0.5)."""
+    rec = row.get('agent_recommendation')
+    reasoning = row.get('final_recommendation_reasoning')
+    final = None
+    if isinstance(rec, str) and rec.strip():
+        final = {'recommendation': rec.strip(), 'reasoning': reasoning}
+
+    tools = [t for t in str(row.get('tools_used') or '').split(',') if t and t != 'nan']
+
+    completed = row.get('completed_naturally')
+    if not isinstance(completed, (bool,)):
+        completed = str(completed).strip().lower() == 'true'  # bool("False") is True
+
+    return {
+        'final_recommendation_parsed': final,
+        'tools_used': tools,
+        'completed_naturally': completed,
+        'ground_truth': float(row.get('ground_truth_prob', 0.0)),
+    }
+
+
+def _trace_response_text(row: pd.Series) -> str:
+    """The completion DPO trains on: the exact two-key JSON the agent contract
+    asks for, rebuilt from the CSV columns."""
+    return json.dumps({
+        "recommendation": str(row.get('agent_recommendation', '')).strip(),
+        "reasoning": str(row.get('final_recommendation_reasoning', '')).strip(),
+    })
 
 
 def create_preference_dataset_from_traces(csv_file_path: str) -> Optional[Dataset]:
     df = pd.read_csv(csv_file_path)
+    # Recompute rewards from the raw trace columns (tools_used,
+    # completed_naturally, ground_truth_prob, recommendation) with THIS file's
+    # calculate_reward, overwriting the Stage 2 values.
+    df['reward'] = df.apply(lambda row: calculate_reward(_csv_row_to_trace(row)), axis=1)
     df['reward'] = pd.to_numeric(df['reward'], errors='coerce')
     valid_df = df.dropna(subset=['reward', 'initial_user_prompt', 'final_recommendation_reasoning']).copy()
     valid_df = valid_df[valid_df['reward'] > -1.0]
-    
+
     if len(valid_df) < 2:
         print("Not enough valid traces to create preference pairs.")
         return None
-    
-    valid_df = valid_df.sort_values(by='reward', ascending=False)
-    
-    # YOUR CODE HERE, YOU DECIDE HOW TO PAIR PREFERENCES, whether or not to use a reward gap criteria
-    # and how to score them.
 
+    valid_df = valid_df.sort_values(by='reward', ascending=False)
+
+    # Pairing design, driven by what is actually in the 70-trace dataset:
+    #   * chosen  = correct recommendations (reward 1.0)
+    #   * rejected = anything with a reward gap >= MIN_REWARD_GAP below the
+    #     chosen trace (incorrect answers at -0.5 give a 1.5 gap; process
+    #     failures at -0.25/-0.75 also qualify)
+    #   * every chosen trace in this dataset says YES (there are zero correct
+    #     NOs), so unrestricted pairing would teach "always say YES". Pairs
+    #     against a rejected trace that ALSO says YES (right-for-the-reasons vs
+    #     wrong-for-the-reasons) carry the reasoning-quality signal instead,
+    #     and the per-trace usage caps below stop any single trace or contrast
+    #     from dominating.
+    #   * the prompt of each pair is the CHOSEN trace's prompt. The rejected
+    #     completion answered a different scenario -- a known simplification of
+    #     trace-level DPO, worth a line in the report.
+    MIN_REWARD_GAP = 0.5
+    MAX_USES_PER_CHOSEN = 2
+    MAX_USES_PER_REJECTED = 2
+
+    high_reward_traces = valid_df[valid_df['reward'] >= 1.0]
+    low_reward_traces = valid_df[valid_df['reward'] < 1.0]
+
+    rng = random.Random(42)
+    low_rows = list(low_reward_traces.iterrows())
+    rng.shuffle(low_rows)
+    rejected_uses = {idx: 0 for idx, _ in low_rows}
 
     filtered_pairs = []
-
-    high_reward_traces = ...
-    low_reward_traces = ...
-        
     for _, high_trace in high_reward_traces.iterrows():
-        for _, low_trace in low_reward_traces.iterrows():
-            
-            # YOUR CODE HERE, YOU DECIDE HOW TO PAIR PREFERENCES, EMPHASIZE REWARDS, ETC.
-            # Just ensure your pairs represent diverse responses so the model does not only
-            # learn the same dichotomies.
-            # This double for loop is not strictly necessary, and you may choose to
-            # structure this part however you like.
+        uses = 0
+        for low_idx, low_trace in low_rows:
+            if uses >= MAX_USES_PER_CHOSEN:
+                break
+            if rejected_uses[low_idx] >= MAX_USES_PER_REJECTED:
+                continue
+            if high_trace['reward'] - low_trace['reward'] < MIN_REWARD_GAP:
+                continue
+            filtered_pairs.append({
+                "prompt": high_trace['initial_user_prompt'],
+                "chosen": _trace_response_text(high_trace),
+                "rejected": _trace_response_text(low_trace),
+            })
+            rejected_uses[low_idx] += 1
+            uses += 1
 
-    if len(filtered_pairs) < 'YOUR_THRESHOLD_HERE':
+    rng.shuffle(filtered_pairs)
+    n_yes_rejected = sum(1 for p in filtered_pairs if '"recommendation": "YES"' in p['rejected'])
+    print(f"Built {len(filtered_pairs)} preference pairs "
+          f"({n_yes_rejected} rejected=YES / {len(filtered_pairs) - n_yes_rejected} rejected=NO), "
+          f"gap >= {MIN_REWARD_GAP}, caps {MAX_USES_PER_CHOSEN}/{MAX_USES_PER_REJECTED}")
+
+    if len(filtered_pairs) < 20:
         print(f"Only {len(filtered_pairs)} pairs with sufficient reward gap found. This may cause overfitting.")
-    
+
     return Dataset.from_list(filtered_pairs)
 
 
@@ -156,33 +233,46 @@ def train_model_with_dpo(
         tokenizer.pad_token = tokenizer.eos_token
 
 
+    # r=8/alpha=16: the preference set is ~60 pairs of short JSON completions;
+    # r=16 has nothing extra to learn here and doubles the drift risk against
+    # the reference model. dropout=0.05 (not 0.1): DPO's KL-ish beta term
+    # already regularises toward the reference policy. q/k/v projections:
+    # preference learning mostly reshapes what the model attends to, and
+    # adding k_proj (vs Stage 1's q/v) helped the attention pattern shift
+    # without touching the MLPs.
     peft_config = LoraConfig(
-        r='YOUR INT HERE',              
-        lora_alpha='YOUR INT HERE',    
-        lora_dropout='YOUR FLOAT FRAc HERE', 
-        bias="none", 
+        r=8,
+        lora_alpha=16,
+        lora_dropout=0.05,
+        bias="none",
         task_type="CAUSAL_LM",
-        target_modules=["YOUR LIST HERE"] 
+        target_modules=["q_proj", "k_proj", "v_proj"]
     )
 
-    from trl import DPOTrainer, DPOConfig
-        
+    from compat import make_dpo_training_args, make_dpo_trainer
 
-    training_args = DPOConfig(
+    # lr=5e-6: DPO moves logits, not knowledge -- an order of magnitude below
+    # the SFT lr; 5e-5-class rates visibly collapse outputs on sets this small.
+    # max_steps=100 with effective batch 2 is ~3 passes over ~60 pairs: enough
+    # to move preferences, small enough not to memorise them. beta=0.1 is the
+    # standard DPO trade-off between following the data and staying near the
+    # reference. max_length 1024/768 fits the real data (prompts ~400 tokens,
+    # completions ~200) -- the starter's 8192 just wastes memory on padding.
+    training_args = make_dpo_training_args(
         output_dir="./dpo_results",
         per_device_train_batch_size=1,
         gradient_accumulation_steps=2,
-        learning_rate='your learning rate',
-        max_steps='your max steps',
-        weight_decay='your weight decay',
-        beta='your beta',
+        learning_rate=5e-6,
+        max_steps=100,
+        weight_decay=0.01,
+        beta=0.1,
         logging_steps=2,
         save_steps=10,
         remove_unused_columns=False,
-        max_length=8192,
-        max_prompt_length=8192,
+        max_length=1024,
+        max_prompt_length=768,
         dataloader_num_workers=0,
-        fp16=False, 
+        fp16=False,
         bf16=False,
         optim="adamw_torch",
         warmup_steps=2,
@@ -190,18 +280,36 @@ def train_model_with_dpo(
         save_total_limit=3,
     )
 
-    trainer = DPOTrainer(
-        model,
-        args=training_args,
+    trainer = make_dpo_trainer(
+        model=model,
+        tokenizer=tokenizer,
         train_dataset=preference_dataset,
         peft_config=peft_config,
+        args=training_args,
     )
     print("Starting DPO training...")
     trainer.train()
     print("DPO training complete.")
     print(f"Saving new LoRA adapter to '{new_adapter_path}'...")
     trainer.save_model(new_adapter_path)
+    tokenizer.save_pretrained(new_adapter_path)
     print("Adapter saved successfully.")
+
+    # The evaluation loads the tuned model with
+    # NPC(model=<path>, provider="transformers"), which cannot resolve a bare
+    # LoRA adapter directory -- it needs full model weights. Merge the adapter
+    # into the base once here and hand the merged directory to the eval.
+    del trainer
+    del model
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    merged_path = new_adapter_path.rstrip('/') + "-merged"
+    print(f"Merging adapter into base and saving to '{merged_path}' for evaluation...")
+    merged_model, merged_tokenizer = load_trained_model(base_model_id, new_adapter_path)
+    merged_model.save_pretrained(merged_path)
+    merged_tokenizer.save_pretrained(merged_path)
+    print("Merged model saved.")
+    return merged_path
 
 
 def run_local_agent_evaluation(
@@ -291,12 +399,28 @@ def evaluate_model_performance(
    
    baseline_results = run_local_agent_evaluation(base_model_id, test_scenarios, "baseline")
    trained_results = run_local_agent_evaluation(adapter_path, test_scenarios, "trained")
-   
+
    baseline_metrics = calculate_accuracy_metrics(baseline_results)
    trained_metrics = calculate_accuracy_metrics(trained_results)
    improvement = trained_metrics['accuracy'] - baseline_metrics['accuracy']
-   
-   return {'improvement_percent': improvement}
+
+   summary = {
+       'baseline_accuracy': baseline_metrics['accuracy'],
+       'trained_accuracy': trained_metrics['accuracy'],
+       'improvement_percent': improvement,
+       'n_scenarios': baseline_metrics['total_scenarios'],
+       'baseline_results': baseline_results,
+       'trained_results': trained_results,
+   }
+   print(f"\nBaseline accuracy: {baseline_metrics['accuracy']:.1f}% "
+         f"({baseline_metrics['correct_count']}/{baseline_metrics['total_scenarios']})")
+   print(f"Trained accuracy:  {trained_metrics['accuracy']:.1f}% "
+         f"({trained_metrics['correct_count']}/{trained_metrics['total_scenarios']})")
+   print(f"Improvement:       {improvement:+.1f} percentage points")
+   with open("dpo_evaluation_results.json", "w") as fh:
+       json.dump(summary, fh, indent=2)
+   print("Evaluation record written to dpo_evaluation_results.json (for the report)")
+   return summary
 
 
 if __name__ == "__main__":
@@ -312,21 +436,52 @@ if __name__ == "__main__":
     df = pd.read_csv(most_recent_csv)
     traces_csv_file = most_recent_csv
     
+    import argparse
+    parser = argparse.ArgumentParser(description="Stage 3: DPO training + evaluation")
+    parser.add_argument("--skip-training", action="store_true",
+                        help="reuse the saved adapter and only run the evaluation")
+    parser.add_argument("--eval-scenarios", type=int, default=3,
+                        help="fresh scenarios per model in the eval (each runs all 7 personas)")
+    parser.add_argument("--pairs-only", action="store_true",
+                        help="build and report the preference dataset, then exit (fast sanity check)")
+    parser.add_argument("--train-only", action="store_true",
+                        help="train and merge, but skip the (slow) evaluation phase")
+    args = parser.parse_args()
+
     base_model = "Qwen/Qwen3-0.6B"
     adapter_path = "./qwen3-dpo-adapter-v1"
+    merged_path = adapter_path.rstrip('/') + "-merged"
 
-    train_model_with_dpo(
-        csv_file_path=traces_csv_file,
-        base_model_id=base_model,
-        new_adapter_path=adapter_path,
-    )
+    if args.pairs_only:
+        ds = create_preference_dataset_from_traces(traces_csv_file)
+        if ds is not None and len(ds) > 0:
+            print(f"\nSample pair:\nPROMPT: {ds[0]['prompt'][:300]}...")
+            print(f"CHOSEN: {ds[0]['chosen'][:300]}")
+            print(f"REJECTED: {ds[0]['rejected'][:300]}")
+        raise SystemExit(0)
+
+    if not args.skip_training:
+        merged = train_model_with_dpo(
+            csv_file_path=traces_csv_file,
+            base_model_id=base_model,
+            new_adapter_path=adapter_path,
+        )
+        if merged:
+            merged_path = merged
+
+    if args.train_only:
+        print(f"\n--train-only: skipping evaluation. Adapter at {adapter_path}, "
+              f"merged model at {merged_path}.")
+        raise SystemExit(0)
 
     print("\n" + "="*60)
     print("EVALUATION PHASE")
     print("="*60)
 
+    # the merged full-weights dir, not the bare adapter: NPC(provider=
+    # "transformers") cannot load an adapter-only directory
     evaluate_model_performance(
         base_model_id=base_model,
-        adapter_path=adapter_path,
-        test_scenarios_count=3
+        adapter_path=merged_path,
+        test_scenarios_count=args.eval_scenarios
     )
