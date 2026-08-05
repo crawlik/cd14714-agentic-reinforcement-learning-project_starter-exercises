@@ -1,0 +1,990 @@
+{
+  "baseline_accuracy": 37.142857142857146,
+  "trained_accuracy": 35.714285714285715,
+  "improvement_percent": -1.4285714285714306,
+  "n_scenarios": 70,
+  "baseline_results": [
+    {
+      "scenario_id": "0_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p0",
+      "persona": "Pax",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p0",
+      "persona": "Pax",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p0",
+      "persona": "Pax",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p0",
+      "persona": "Pax",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "0_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p1",
+      "persona": "Vigil",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p1",
+      "persona": "Vigil",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p1",
+      "persona": "Vigil",
+      "is_correct": 1,
+      "agent_outcome": "NO",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "0_p2",
+      "persona": "Aura",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p2",
+      "persona": "Aura",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p2",
+      "persona": "Aura",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p2",
+      "persona": "Aura",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p2",
+      "persona": "Aura",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p2",
+      "persona": "Aura",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p2",
+      "persona": "Aura",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p2",
+      "persona": "Aura",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p2",
+      "persona": "Aura",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p2",
+      "persona": "Aura",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "0_p3",
+      "persona": "Cortex",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p3",
+      "persona": "Cortex",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p3",
+      "persona": "Cortex",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p3",
+      "persona": "Cortex",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p3",
+      "persona": "Cortex",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p3",
+      "persona": "Cortex",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p3",
+      "persona": "Cortex",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p3",
+      "persona": "Cortex",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p3",
+      "persona": "Cortex",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p3",
+      "persona": "Cortex",
+      "is_correct": 1,
+      "agent_outcome": "NO",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "0_p4",
+      "persona": "Echo",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p4",
+      "persona": "Echo",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p4",
+      "persona": "Echo",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p4",
+      "persona": "Echo",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p4",
+      "persona": "Echo",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p4",
+      "persona": "Echo",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p4",
+      "persona": "Echo",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p4",
+      "persona": "Echo",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p4",
+      "persona": "Echo",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p4",
+      "persona": "Echo",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "0_p5",
+      "persona": "Maven",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p5",
+      "persona": "Maven",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p5",
+      "persona": "Maven",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p5",
+      "persona": "Maven",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p5",
+      "persona": "Maven",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p5",
+      "persona": "Maven",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p5",
+      "persona": "Maven",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p5",
+      "persona": "Maven",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p5",
+      "persona": "Maven",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p5",
+      "persona": "Maven",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "0_p6",
+      "persona": "Nexus",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p6",
+      "persona": "Nexus",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p6",
+      "persona": "Nexus",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p6",
+      "persona": "Nexus",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p6",
+      "persona": "Nexus",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p6",
+      "persona": "Nexus",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p6",
+      "persona": "Nexus",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p6",
+      "persona": "Nexus",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p6",
+      "persona": "Nexus",
+      "is_correct": 1,
+      "agent_outcome": "NO",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p6",
+      "persona": "Nexus",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    }
+  ],
+  "trained_results": [
+    {
+      "scenario_id": "0_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p0",
+      "persona": "Pax",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p0",
+      "persona": "Pax",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p0",
+      "persona": "Pax",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "0_p1",
+      "persona": "Vigil",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p1",
+      "persona": "Vigil",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p1",
+      "persona": "Vigil",
+      "is_correct": 1,
+      "agent_outcome": "NO",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p1",
+      "persona": "Vigil",
+      "is_correct": 1,
+      "agent_outcome": "NO",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "0_p2",
+      "persona": "Aura",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p2",
+      "persona": "Aura",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p2",
+      "persona": "Aura",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p2",
+      "persona": "Aura",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p2",
+      "persona": "Aura",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p2",
+      "persona": "Aura",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p2",
+      "persona": "Aura",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p2",
+      "persona": "Aura",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p2",
+      "persona": "Aura",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p2",
+      "persona": "Aura",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "0_p3",
+      "persona": "Cortex",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p3",
+      "persona": "Cortex",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p3",
+      "persona": "Cortex",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p3",
+      "persona": "Cortex",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p3",
+      "persona": "Cortex",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p3",
+      "persona": "Cortex",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p3",
+      "persona": "Cortex",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p3",
+      "persona": "Cortex",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p3",
+      "persona": "Cortex",
+      "is_correct": 1,
+      "agent_outcome": "NO",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p3",
+      "persona": "Cortex",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "0_p4",
+      "persona": "Echo",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p4",
+      "persona": "Echo",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p4",
+      "persona": "Echo",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p4",
+      "persona": "Echo",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p4",
+      "persona": "Echo",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p4",
+      "persona": "Echo",
+      "is_correct": 1,
+      "agent_outcome": "NO",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p4",
+      "persona": "Echo",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p4",
+      "persona": "Echo",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p4",
+      "persona": "Echo",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p4",
+      "persona": "Echo",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "0_p5",
+      "persona": "Maven",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p5",
+      "persona": "Maven",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p5",
+      "persona": "Maven",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p5",
+      "persona": "Maven",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p5",
+      "persona": "Maven",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p5",
+      "persona": "Maven",
+      "is_correct": 1,
+      "agent_outcome": "NO",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p5",
+      "persona": "Maven",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p5",
+      "persona": "Maven",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p5",
+      "persona": "Maven",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p5",
+      "persona": "Maven",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "0_p6",
+      "persona": "Nexus",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "1_p6",
+      "persona": "Nexus",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "2_p6",
+      "persona": "Nexus",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "3_p6",
+      "persona": "Nexus",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "4_p6",
+      "persona": "Nexus",
+      "is_correct": 1,
+      "agent_outcome": "YES",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "5_p6",
+      "persona": "Nexus",
+      "is_correct": 1,
+      "agent_outcome": "NO",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "6_p6",
+      "persona": "Nexus",
+      "is_correct": 0,
+      "agent_outcome": "FAIL",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "7_p6",
+      "persona": "Nexus",
+      "is_correct": 0,
+      "agent_outcome": "NO",
+      "true_outcome": "YES"
+    },
+    {
+      "scenario_id": "8_p6",
+      "persona": "Nexus",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    },
+    {
+      "scenario_id": "9_p6",
+      "persona": "Nexus",
+      "is_correct": 0,
+      "agent_outcome": "YES",
+      "true_outcome": "NO"
+    }
+  ]
+}
